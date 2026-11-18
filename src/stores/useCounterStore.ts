@@ -8,10 +8,14 @@ interface CounterStore {
   increaseBy: (amount: number) => void;
   decreaseBy: (amount: number) => void;
   setCount: (amount:number)=> void;
+
+  label: string;
+  setLabel: (value:string)=>void;
 }
 
 export const useCounterStore = create<CounterStore>()((set) => ({
   count: 0,
+  label: "Counter A",
   increase: () => {
     set((state) => ({ count: state.count + 1 }));
   },
@@ -29,5 +33,8 @@ export const useCounterStore = create<CounterStore>()((set) => ({
   },
   setCount: (amount)=>{
     set({count: amount})
+  },
+  setLabel: (value) => {
+    set({label:value})
   }
 }));
