@@ -5,6 +5,9 @@ interface CounterStore {
   increase: () => void;
   decrease: () => void;
   reset: () => void;
+  increaseBy: (amount: number) => void;
+  decreaseBy: (amount: number) => void;
+  setCount: (amount:number)=> void;
 }
 
 export const useCounterStore = create<CounterStore>()((set) => ({
@@ -16,6 +19,15 @@ export const useCounterStore = create<CounterStore>()((set) => ({
     set(({ count }) => ({ count: count - 1 }));
   },
   reset: () => {
-    set({count: 0})
+    set({ count: 0 });
   },
+  increaseBy: (amount) => {
+    set(({ count }) => ({ count: count + amount }));
+  },
+  decreaseBy: (amount) => {
+    set(({ count }) => ({ count: count - amount }));
+  },
+  setCount: (amount)=>{
+    set({count: amount})
+  }
 }));
