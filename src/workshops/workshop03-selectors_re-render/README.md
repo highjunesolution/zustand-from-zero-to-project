@@ -309,9 +309,24 @@ Object.is(
 
 ใน Zustand v5 ผลลัพธ์ Selector ที่ Reference ไม่คงที่อาจทำให้เกิดการ Render ซ้ำหรือ Infinite Render Loop ได้
 
-### ใช้ useShallow
+### ทำไมต้องมี useShallow?
 
-ใช้ `useShallow` เมื่อต้องการเลือกหลายค่าและรวมเป็น Object:
+`useShallow` ช่วยลดการ Re-render ที่ไม่จำเป็นเมื่อ Selector คืนค่าเป็น Object หรือ Array โดยเปรียบเทียบข้อมูลภายในระดับแรกด้วย **Shallow Comparison**
+
+จำง่าย ๆ ว่า **Object ใหม่ไม่ได้แปลว่าข้อมูลข้างในเปลี่ยนเสมอไป**
+
+```ts
+const a = { count: 10 };
+const b = { count: 10 };
+
+console.log(a === b); // false
+```
+
+แม้ `count` จะเท่ากัน แต่ `a` และ `b` เป็น Object คนละตัวในหน่วยความจำจึงมี Reference ต่างกัน โดยปกติ Zustand ใช้ `Object.is` ตรวจสอบผลลัพธ์ของ Selector ซึ่งจะพิจารณา Reference ของ Object ด้วย
+
+### useShallow ช่วยอย่างไร?
+
+เมื่อต้องการเลือก `count` และ `label` พร้อมกัน ให้นำ Selector ไปครอบด้วย `useShallow`:
 
 ```tsx
 import { useShallow } from "zustand/react/shallow";
@@ -324,20 +339,39 @@ const data = useCounterStore(
 );
 ```
 
-`useShallow` เปรียบเทียบ Properties ชั้นแรกของผลลัพธ์ และคืน Reference เดิมเมื่อค่าเหล่านั้นยังเหมือนเดิม
+`useShallow` จะเปรียบเทียบ Properties ระดับแรก หากค่าทั้งหมดยังเหมือนเดิม จะใช้ Object ผลลัพธ์เดิมต่อ ทำให้ Component ไม่ Re-render จากผลลัพธ์ Selector ที่ไม่ได้เปลี่ยนจริง
 
 ```text
-ผลลัพธ์เดิม                   ผลลัพธ์ใหม่
-{ count: 0, label: "A" }     { count: 0, label: "A" }
-       │                              │
-       └──── Shallow compare ─────────┘
-                 เท่ากัน
-                    ↓
-          ใช้ Reference เดิมต่อ
+Object A                         Object B
+┌─────────────────────┐         ┌─────────────────────┐
+│ count: 10           │         │ count: 10           │
+│ label: "A"          │         │ label: "A"          │
+└──────────┬──────────┘         └──────────┬──────────┘
+           │                               │
+           └────── Shallow Comparison ─────┘
+                           │
+                     Shallow Equal
+              Properties ระดับแรกเหมือนกัน
 ```
 
-> [!NOTE]
-> เริ่มจาก Selector ธรรมดาหรือเลือกแยกค่าก่อน ใช้ `useShallow` เมื่อจำเป็นต้องคืน Object หรือ Array ที่รวมหลายค่าจริง ๆ
+> [!IMPORTANT]
+> Shallow Comparison ไม่ได้เปรียบเทียบ Object ซ้อนกันทุกระดับ หาก Property เป็น Object อีกชั้น ระบบจะเปรียบเทียบ Reference ของ Object ชั้นนั้น
+
+### ควรใช้ useShallow เมื่อไหร่?
+
+| รูปแบบ Selector | คำแนะนำ |
+| --- | --- |
+| `state.count` | ใช้ Selector ธรรมดา |
+| `state.label` | ใช้ Selector ธรรมดา |
+| `({ count: state.count, label: state.label })` | ใช้ `useShallow` |
+| `state.employees` | ใช้ Selector ธรรมดา |
+| `state.employees.filter(...)` | พิจารณาใช้ `useShallow` เพราะได้ Array ใหม่ |
+
+> [!WARNING]
+> ใน Zustand v5 การคืน Object หรือ Array ใหม่จาก Selector ทุกครั้งโดยไม่รักษา Reference อาจทำให้เกิด Infinite Render Loop ได้
+
+> [!TIP]
+> หากเลือกค่าเดียว เช่น `state.count` ไม่จำเป็นต้องใช้ `useShallow` แต่ถ้า Selector สร้าง Object หรือ Array ใหม่ ให้พิจารณาใช้ `useShallow`
 
 ## 6. Workshop Challenge
 
