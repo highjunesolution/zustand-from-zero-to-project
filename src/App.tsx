@@ -1,12 +1,12 @@
+import AuthProfile from "./components/AuthProfile";
 import EmployeePage from "./components/EmployeePage";
-
+import LoginForm from "./components/LoginForm";
+import { useAuthStore } from "./stores/useAuthStore";
 
 const App = () => {
-  return (
-    <>
-      <EmployeePage/>
-    </>
-  )
-}
+  const user = useAuthStore((state) => state.user);
 
-export default App
+  return <>{user ? <AuthProfile /> : <LoginForm />}</>;
+};
+
+export default App;
