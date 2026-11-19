@@ -1,12 +1,10 @@
-import EmployeeForm from "./components/EmployeeForm";
-import EmployeeList from "./components/EmployeeList";
+import EmployeePage from "./components/EmployeePage";
 
 
 const App = () => {
   return (
     <>
-      <EmployeeForm/>
-      <EmployeeList/>
+      <EmployeePage/>
     </>
   )
 }
