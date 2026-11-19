@@ -1,19 +1,12 @@
-import CounterButtons from "./components/CounterButtons";
-import CounterDisplay from "./components/CounterDisplay";
-import CounterWhole from "./components/CounterWhole";
-import LabelButtons from "./components/LabelButtons";
-import LabelDisplay from "./components/LabelDisplay";
+import EmployeeForm from "./components/EmployeeForm";
+import EmployeeList from "./components/EmployeeList";
+
 
 const App = () => {
   return (
     <>
-      <CounterWhole/>
-      <CounterDisplay/>
-
-      <CounterButtons/>
-
-      <LabelDisplay/>
-      <LabelButtons/>
+      <EmployeeForm/>
+      <EmployeeList/>
     </>
   )
 }
