@@ -2,18 +2,27 @@ import { useEmployeeStore } from "../stores/useEmployeeStore";
 
 const EmployeeList = () => {
   const employees = useEmployeeStore((state) => state.employees);
-  const toggleEmployeeActive = useEmployeeStore((state)=> state.toggleEmployeeActive)
-  const removeEmployee = useEmployeeStore((state)=> state.removeEmployee)
+  const toggleEmployeeActive = useEmployeeStore(
+    (state) => state.toggleEmployeeActive,
+  );
+  const removeEmployee = useEmployeeStore((state) => state.removeEmployee);
+  const searchTerm = useEmployeeStore((state) => state.searchTerm);
+
+  const filteredEmployees = employees.filter((employee) =>
+    employee.name.toLowerCase().includes(searchTerm.trim().toLowerCase()),
+  );
 
   return (
     <div>
       <h2>Employees</h2>
 
-      {employees.map((employee) => (
+      {filteredEmployees.map((employee) => (
         <div key={employee.id}>
           <p>{employee.name}</p>
-          <button onClick={()=>toggleEmployeeActive(employee.id)}>{employee.active ? "Active" : "Inactive"}</button>
-          <button onClick={()=>removeEmployee(employee.id)}>Remove</button>
+          <button onClick={() => toggleEmployeeActive(employee.id)}>
+            {employee.active ? "Active" : "Inactive"}
+          </button>
+          <button onClick={() => removeEmployee(employee.id)}>Remove</button>
         </div>
       ))}
     </div>
