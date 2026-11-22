@@ -1,6 +1,7 @@
 import { create, type StateCreator } from "zustand";
 import type { AuthUser, LoginInput } from "../types/auth";
-import { mockLogin } from "../services/mockAuth";
+import { loginApi } from "../services/authService";
+
 
 interface AuthStore {
   user: AuthUser | null;
@@ -20,9 +21,9 @@ const authStore: StateCreator<AuthStore> = (set) => ({
     set({ loading: true, error: null });
 
     try {
-      const user = await mockLogin(input);
+      const user = await loginApi(input);
 
-      set({ user });
+      set({ user, error: null });
 
       return true;
     } catch (error) {
