@@ -75,6 +75,21 @@ app.post("/api/auth/login", (req, res, next) => {
   });
 });
 
+app.get("/api/auth/me", (req,res, next)=>{
+  const { user } = req.session
+
+  if(!user) {
+    return res.status(401).json({
+      message: "Unauthenticated"
+    })
+  }
+
+  res.setHeader("Cache-Control", "no-store");
+  return res.status(200).json({
+    user
+  })
+})
+
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`Server running at http://127.0.0.1:${PORT}`);
 });

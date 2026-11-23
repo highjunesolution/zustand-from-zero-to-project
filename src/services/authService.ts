@@ -28,3 +28,27 @@ export async function loginApi(input: LoginInput): Promise<AuthUser> {
 
   return data.user;
 }
+
+interface MeResponse {
+  user: AuthUser;
+}
+
+export async function getCurrentUserApi(): Promise<AuthUser | null> {
+  const response = await fetch("/api/auth/me", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Session check failed: ${response.status}`);
+  }
+
+  const data: MeResponse = await response.json();
+
+  return data.user;
+}
