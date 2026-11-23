@@ -31,7 +31,7 @@ Workshop นี้ออกแบบมาให้เรียน Zustand อ�
 - จัดการ Object และ Array ภายใน Store
 - จัดการ Async Action, Loading และ Error
 - บันทึก State ลง `localStorage` ด้วย Persist Middleware
-- ออกแบบ Authentication Store
+- ออกแบบ Authentication Store และเชื่อม Server-side Session
 - วางโครงสร้าง Store สำหรับโปรเจกต์จริง
 
 ## เริ่มต้นใช้งาน
@@ -66,45 +66,36 @@ pnpm dev
 
 | Workshop | หัวข้อ | สิ่งที่จะได้ฝึก |
 | :---: | --- | --- |
-| 01 | **Zustand Fundamentals** | Store, State, Action และ `set` |
-| 02 | **TypeScript + Store** | Interface, Parameters และ Return Types |
-| 03 | **Selectors** | การเลือก State และการ Re-render |
-| 04 | **Objects & Arrays** | เพิ่ม แก้ไข และลบข้อมูล Employee |
-| 05 | **Async Actions** | เรียก API พร้อมจัดการ Loading และ Error |
-| 06 | **Persist** | จัดเก็บ State ใน `localStorage` |
-| 07 | **Authentication** | Login, Logout, User และ Token |
-| 08 | **Store Architecture** | แยก Store และจัดโครงสร้างโปรเจกต์ |
-| 09 | **Mini Project** | Employee Management เชื่อมต่อ API |
+| [01](./src/workshops/workshop01-zustand_fundamentals/README.md) | **Zustand Fundamentals** | Store, State, Action และ `set` |
+| [02](./src/workshops/workshop02-action_parameters/README.md) | **Action Parameters** | Parameters, TypeScript และการส่งค่าจาก Component |
+| [03](./src/workshops/workshop03-selectors_re-render/README.md) | **Selectors & Re-render** | การเลือก State และควบคุมการ Re-render |
+| [04](./src/workshops/workshop04-objects_arrays/README.md) | **Objects & Arrays** | เพิ่ม แก้ไข และลบข้อมูล Employee |
+| [05](./src/workshops/workshop05-async_action_api/README.md) | **Async Actions & API** | เรียก API พร้อมจัดการ Loading และ Error |
+| [06](./src/workshops/workshop06-persist/README.md) | **Persist Middleware** | จัดเก็บ State ใน `localStorage` |
+| [07.1](./src/workshops/workshop07-01-authentication_store/README.md) | **Authentication Store** | Login, Logout และ Current User |
+| [07.2.1](./src/workshops/workshop07-02a-express/README.md) | **Express Login API** | Server-side Session และ HttpOnly Cookie |
+| [07.2.2](./src/workshops/workshop07-02b-restore_authentication_session/README.md) | **Restore Authentication** | ตรวจสอบ Session และกู้คืน User หลัง Refresh |
 
-## Workshop ปัจจุบัน
+## เริ่มต้นเรียน
 
-### 01 — Zustand Fundamentals
-
-เรียนรู้พื้นฐานการสร้าง Counter Store และเชื่อมต่อ Store เข้ากับ React Components โดยไม่ต้องส่ง Props ระหว่างกัน
-
-หัวข้อหลัก:
-
-- สร้าง State เริ่มต้น
-- สร้าง Actions สำหรับเพิ่ม ลด และรีเซ็ตค่า
-- ใช้ Selector อ่าน State และ Action
-- ทำความเข้าใจ Data Flow ระหว่าง Store และ Components
-
-เริ่มเรียนได้ที่ **[Workshop 01: Zustand Fundamentals](./src/workshops/workshop01-zustand_fundamentals/README.md)**
+เริ่มต้นเรียนได้ที่ **[Workshop 01: Zustand Fundamentals →](./src/workshops/workshop01-zustand_fundamentals/README.md)**
 
 ## โครงสร้างโปรเจกต์
 
 ```text
-src/
-├── components/
-│   ├── CounterButtons.tsx
-│   └── CounterDisplay.tsx
-├── stores/
-│   └── useCounterStore.ts
-├── workshops/
-│   └── workshop01-zustand_fundamentals/
-│       └── README.md
-├── App.tsx
-└── main.tsx
+zustand-from-zero-to-project/
+├── server/          # Express TypeScript Backend
+│   └── src/
+├── src/
+│   ├── components/  # React Components
+│   ├── services/    # API Services
+│   ├── stores/      # Zustand Stores
+│   ├── types/       # TypeScript Types
+│   ├── workshops/   # เอกสาร Workshop ตามลำดับ
+│   ├── App.tsx
+│   └── main.tsx
+├── package.json
+└── vite.config.ts
 ```
 
 ## แนวคิดสำคัญ
