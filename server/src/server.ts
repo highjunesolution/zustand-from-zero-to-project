@@ -76,6 +76,7 @@ app.post("/api/auth/login", (req, res, next) => {
 });
 
 app.get("/api/auth/me", (req,res, next)=>{
+  res.setHeader("Cache-Control", "no-store");
   const { user } = req.session
 
   if(!user) {
@@ -84,7 +85,6 @@ app.get("/api/auth/me", (req,res, next)=>{
     })
   }
 
-  res.setHeader("Cache-Control", "no-store");
   return res.status(200).json({
     user
   })
