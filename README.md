@@ -75,6 +75,7 @@ pnpm dev
 | [07.1](./src/workshops/workshop07-01-authentication_store/README.md) | **Authentication Store** | Login, Logout และ Current User |
 | [07.2.1](./src/workshops/workshop07-02a-express/README.md) | **Express Login API** | Server-side Session และ HttpOnly Cookie |
 | [07.2.2](./src/workshops/workshop07-02b-restore_authentication_session/README.md) | **Restore Authentication** | ตรวจสอบ Session และกู้คืน User หลัง Refresh |
+| [07.2.3](./src/workshops/workshop07-02c-logout_session_destruction/README.md) | **Logout & Session Destruction** | ทำลาย Session และลบ HttpOnly Cookie |
 
 ## เริ่มต้นเรียน
 
