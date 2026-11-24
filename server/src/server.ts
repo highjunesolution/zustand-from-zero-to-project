@@ -88,7 +88,25 @@ app.get("/api/auth/me", (req,res, next)=>{
   return res.status(200).json({
     user
   })
-})
+});
+
+app.post("/api/auth/logout", (req, res, next)=>{
+  res.setHeader("Cache-Control", "no-store");
+  req.session.destroy((err)=>{
+    if(err) {
+      return next(err);
+    }
+
+    res.clearCookie("workshop.sid", {
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    })
+
+    return res.status(204).end();
+  })
+});
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`Server running at http://127.0.0.1:${PORT}`);

@@ -52,3 +52,15 @@ export async function getCurrentUserApi(): Promise<AuthUser | null> {
 
   return data.user;
 }
+
+export async function logoutApi():Promise<void> {
+  const response = await fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if(!response.ok) {
+    throw new Error(`Logout failed: HTTP ${response.status}`);
+    
+  }
+}
