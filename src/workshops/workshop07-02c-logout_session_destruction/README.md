@@ -772,7 +772,7 @@ Login → Restore Session → Logout
 
 <div align="center">
 
-  **ถัดไป:** Workshop 07.3 — React Router & Protected Routes
+  **ถัดไป:** [Workshop 07.3.1 — Protected Routes](../workshop07-03a-protect_route/README.md)
 
   [← Workshop 07.2.2](../workshop07-02b-restore_authentication_session/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

@@ -76,6 +76,7 @@ pnpm dev
 | [07.2.1](./src/workshops/workshop07-02a-express/README.md) | **Express Login API** | Server-side Session และ HttpOnly Cookie |
 | [07.2.2](./src/workshops/workshop07-02b-restore_authentication_session/README.md) | **Restore Authentication** | ตรวจสอบ Session และกู้คืน User หลัง Refresh |
 | [07.2.3](./src/workshops/workshop07-02c-logout_session_destruction/README.md) | **Logout & Session Destruction** | ทำลาย Session และลบ HttpOnly Cookie |
+| [07.3.1](./src/workshops/workshop07-03a-protect_route/README.md) | **Protected Routes** | React Router, Route Guard และ Nested Routes |
 
 ## เริ่มต้นเรียน
 
