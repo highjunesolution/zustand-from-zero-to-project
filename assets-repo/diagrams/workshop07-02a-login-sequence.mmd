@@ -1,0 +1,38 @@
+sequenceDiagram
+    actor User
+    participant UI as LoginForm
+    participant Z as Zustand
+    participant Browser
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>UI: Submit Email และ Password
+    UI->>Z: login(input)
+    Z->>Z: loading = true และ error = null
+    Z->>Browser: loginApi(input) ใช้ fetch
+    Browser->>API: POST /api/auth/login พร้อม JSON
+    alt Input ไม่ใช่ String
+        API-->>Browser: 400 พร้อมข้อความ Validation
+        Browser-->>Z: loginApi() Throw Error
+        Z->>Z: user = null และเก็บ Error
+        Z-->>UI: แสดงข้อความ Validation
+    else Credentials ไม่ถูกต้อง
+        API-->>Browser: 401 Invalid email or password
+        Browser-->>Z: loginApi() Throw Error
+        Z->>Z: user = null และเก็บ Error
+        Z-->>UI: แสดง Login Error
+    else Credentials ถูกต้อง
+        API->>Store: req.session.regenerate()
+        Store-->>API: Session ID ใหม่
+        API->>API: req.session.user = demoUser
+        API->>Store: req.session.save()
+        Store-->>API: บันทึก Session สำเร็จ
+        API-->>Browser: 200 พร้อม Set-Cookie และ JSON user
+        Browser->>Browser: เก็บ HttpOnly Cookie ตามนโยบาย Browser
+        Browser-->>Z: loginApi() คืน AuthUser จาก JSON
+        Z->>Z: set user และคืน true
+        Z-->>UI: UI แสดง Profile ตาม User ใน Store
+    end
+    Z->>Z: finally: loading = false
+    Note over API,Store: หาก regenerate หรือ save ล้มเหลว โค้ดส่ง next(err) แทน Response สำเร็จ
+    Note over Browser,Z: React ไม่อ่าน Session ID จาก HttpOnly Cookie

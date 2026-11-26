@@ -1,0 +1,15 @@
+flowchart TD
+    A["เรียก logout()"] --> B{"logoutLoading เป็น true?"}
+    B -->|ใช่| C["Return: ไม่เริ่ม Request ซ้ำ"]
+    B -->|ไม่ใช่| D["logoutLoading = true และ error = null"]
+    D --> E["await logoutApi()"]
+    E --> F{"ได้รับ Response สำเร็จ?"}
+    F -->|ใช่: 204| G["user = null และ authStatus = unauthenticated"]
+    F -->|ไม่: HTTP Error หรือ Network Error| H["เก็บ Error และคง User เดิมไว้"]
+    G --> I["finally: logoutLoading = false"]
+    H --> I
+    I --> J["UI แสดง LoginForm หรือเปิดให้ Retry ตามผลลัพธ์"]
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class G success
+    class H failure

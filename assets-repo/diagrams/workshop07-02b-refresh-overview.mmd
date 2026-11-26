@@ -1,0 +1,15 @@
+flowchart TD
+    A["Refresh หน้าเว็บหลัง Login"] --> B["Zustand ถูกสร้างใหม่: user = null"]
+    A --> C["Browser อาจยังมี HttpOnly Session Cookie"]
+    B --> D["App เรียก checkAuth()"]
+    C --> E["Browser แนบ Cookie ให้ GET /api/auth/me"]
+    D --> E
+    E --> F["Express โหลด Session จาก Server-side Store"]
+    F --> G{"Session มี User หรือไม่?"}
+    G -->|มี: HTTP 200| H["ส่ง AuthUser ให้ Frontend"]
+    H --> I["Zustand เก็บ User และ UI แสดง AuthProfile"]
+    G -->|ไม่มี: HTTP 401| J["Zustand เก็บ null และ UI แสดง LoginForm"]
+    classDef restored fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef guest fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    class H,I restored
+    class J guest

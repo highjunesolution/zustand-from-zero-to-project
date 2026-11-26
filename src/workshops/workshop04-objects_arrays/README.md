@@ -11,6 +11,11 @@
 
   [← Workshop 03](../workshop03-selectors_re-render/README.md) · [หน้าหลัก](../../../README.md) · [Zustand Docs](https://zustand.docs.pmnd.rs/)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop04-objects-arrays-hero.png" alt="สร้าง Array พนักงานชุดใหม่จากรายการเดิมและพนักงานที่เพิ่ม พร้อมแสดงรายชื่อใน Employee Management" width="900" />
+
 </div>
 
 ---
@@ -139,14 +144,19 @@ addEmployee: (employee) => {
 
 Spread Operator จะคัดลอกสมาชิกเดิมทั้งหมดและเพิ่ม Employee ใหม่ไว้ท้าย Array:
 
-```text
-Array เดิม                         Employee ใหม่
-[Tony, Junior]                     [John]
-      │                               │
-      └──────── Spread + Add ─────────┘
-                      │
-                      ▼
-             Array ใหม่ [Tony, Junior, John]
+```mermaid
+flowchart LR
+    OLD["Array เดิม: Tony, Junior"] -->|"index 0"| T["Object Tony เดิม"]
+    OLD -->|"index 1"| J["Object Junior เดิม"]
+    NEW["Array ใหม่: Tony, Junior, John"] -->|"index 0: Reference เดิม"| T
+    NEW -->|"index 1: Reference เดิม"| J
+    NEW -->|"index 2: เพิ่มท้าย Array"| N["Object John ที่ส่งให้ addEmployee"]
+    classDef old fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef fresh fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef added fill:#fffbeb,stroke:#d97706,color:#78350f
+    class OLD old
+    class NEW fresh
+    class N added
 ```
 
 ```ts
@@ -154,6 +164,8 @@ Array เดิม                         Employee ใหม่
 ```
 
 Expression นี้สร้าง **Array ใหม่** โดยไม่แก้ไข Array เดิม
+
+Spread คัดลอก Reference ของสมาชิกเดิม ไม่ได้ Clone Object ทุกตัว ดังนั้น Tony และ Junior ยังเป็น Object เดิม ส่วน John คือ Object ที่รับเข้ามาและเพิ่มไว้ท้าย Array ใหม่
 
 ### ทำไมไม่ใช้ push()?
 
@@ -285,29 +297,22 @@ id: crypto.randomUUID()
 
 เมื่อผู้ใช้กรอกชื่อและกดปุ่ม **Add Employee** ข้อมูลจะไหลตามลำดับนี้:
 
-```text
-┌──────────────────────────────┐
-│  1. ผู้ใช้กรอกชื่อ           │
-│  Input → useState(name)      │
-└──────────────┬───────────────┘
-               │ กด Add Employee
-               ▼
-┌──────────────────────────────┐
-│  2. handleAdd()             │
-│  ตรวจชื่อและสร้าง Employee   │
-└──────────────┬───────────────┘
-               │ addEmployee(employee)
-               ▼
-┌──────────────────────────────┐
-│  3. Zustand Store           │
-│  set() สร้าง employees ใหม่ │
-└──────────────┬───────────────┘
-               │ State เปลี่ยน
-               ▼
-┌──────────────────────────────┐
-│  4. EmployeeList            │
-│  Re-render และแสดงข้อมูลใหม่ │
-└──────────────────────────────┘
+```mermaid
+flowchart TD
+    U["ผู้ใช้กรอกชื่อใน EmployeeForm"] --> L["useState เก็บ name ภายใน Form"]
+    L --> C["กด Add Employee และเรียก handleAdd()"]
+    C --> T["trim ชื่อและตรวจข้อความว่าง"]
+    T --> Q{"มีชื่อหลัง trim หรือไม่?"}
+    Q -->|ไม่มี| STOP["Return: ไม่เพิ่ม Employee"]
+    Q -->|มี| E["สร้าง Employee: UUID, trimmedName และ active = true"]
+    E --> A["เรียก addEmployee(employee)"]
+    A --> S["set สร้าง Array ใหม่ด้วย Spread และเพิ่ม Employee"]
+    S --> R["EmployeeList เลือก employees ผ่าน Selector แล้ว Re-render"]
+    A --> CLEAR["หลัง Action ทำงานเสร็จ: setName เป็นข้อความว่าง"]
+    classDef local fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef shared fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class L,CLEAR local
+    class A,S,R shared
 ```
 
 นำ Components ไปประกอบใน `src/App.tsx`:
@@ -387,6 +392,26 @@ employees.map((employee) =>
 
 </details>
 
+### Reference ก่อนและหลัง Toggle
+
+ตัวอย่างเมื่อ Toggle Junior จาก `active: false` เป็น `true` จะได้ Array ใหม่และ Object Junior ใหม่ ส่วน Tony ใช้ Reference เดิม:
+
+```mermaid
+flowchart LR
+    OLD["Array เดิมก่อน Toggle Junior"] -->|"index 0"| T["Object Tony เดิม: active = true"]
+    OLD -->|"index 1"| J["Object Junior เดิม: active = false"]
+    NEW["Array ใหม่จาก map()"] -->|"ID ไม่ตรง: คืน Object เดิม"| T
+    NEW -->|"ID ตรง: Spread เป็น Object ใหม่"| JNEW["Object Junior ใหม่: active = true"]
+    classDef old fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef fresh fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef changed fill:#fffbeb,stroke:#d97706,color:#78350f
+    class OLD,J old
+    class NEW fresh
+    class JNEW changed
+```
+
+Array และ Object เดิมยังคงค่าเดิมไว้ การใช้ Spread กับ Object ที่เปลี่ยนทำให้ไม่ต้องแก้ `employee.active` บน Object เดิมโดยตรง
+
 ### Challenge C — เชื่อม Actions กับ UI
 
 เลือก Actions จาก Store และเรียกพร้อม `employee.id`:
@@ -425,6 +450,15 @@ const removeEmployee = useEmployeeStore(
 | แก้ไขข้อมูล | `map()` | Array ใหม่ที่มี Item บางรายการเปลี่ยน |
 
 ทั้งสามแนวทางสร้าง Array ใหม่แทนการเปลี่ยน Array เดิมโดยตรง
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Objects & Arrays](../../../assets-repo/images/workshop04-objects-arrays-hero.png)
+- [Diagram: Array ใหม่และ Reference ของสมาชิก](../../../assets-repo/diagrams/workshop04-add-array-references.mmd)
+- [Flowchart: Employee Form และ Store](../../../assets-repo/diagrams/workshop04-employee-data-flow.mmd)
+- [Diagram: Object Reference ก่อนและหลัง Toggle](../../../assets-repo/diagrams/workshop04-toggle-object-references.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 ## 7. คำถามทบทวน
 
@@ -487,7 +521,7 @@ const removeEmployee = useEmployeeStore(
 
 <div align="center">
 
-  **ถัดไป:** Workshop 05 — Async Actions
+  **ถัดไป:** [Workshop 05 — Async Actions & API](../workshop05-async_action_api/README.md)
 
   [← Workshop 03](../workshop03-selectors_re-render/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

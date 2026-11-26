@@ -1,0 +1,17 @@
+flowchart TD
+    I["Initial: user = null / loading = false / error = null"] -->|"login(input)"| P["Pending: loading = true / error = null"]
+    P --> R{"mockLogin() สำเร็จหรือไม่?"}
+    R -->|สำเร็จ| S["Success: user = AuthUser / error = null"]
+    R -->|Throw Error| E["Failed: user = null / เก็บ Error"]
+    S --> FS["finally: loading = false และ login() คืน true"]
+    E --> FE["finally: loading = false และ login() คืน false"]
+    FS --> PROFILE["App แสดง AuthProfile"]
+    FE --> FORM["App แสดง LoginForm พร้อม Error"]
+    FORM -->|"ลอง Login ใหม่"| P
+    PROFILE -->|"logout() แบบ Synchronous"| L["user = null / loading = false / error = null"]
+    L --> LOGIN["App แสดง LoginForm"]
+    LOGIN -->|"login(input)"| P
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class S,FS,PROFILE success
+    class E,FE,FORM failure

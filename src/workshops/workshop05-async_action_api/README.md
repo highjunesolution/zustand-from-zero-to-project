@@ -11,6 +11,11 @@
 
   [← Workshop 04](../workshop04-objects_arrays/README.md) · [หน้าหลัก](../../../README.md) · [Zustand Docs](https://zustand.docs.pmnd.rs/)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop05-async-actions-api-hero.png" alt="Async Action รอข้อมูลจาก REST API แปลงเป็น Employee และอัปเดตรายชื่อ พร้อมเส้นทาง Error" width="900" />
+
 </div>
 
 ---
@@ -73,20 +78,22 @@ Zustand รองรับ Async Actions ได้โดยตรง ไม่�
 
 ### Data Flow ของ Async Action
 
-```text
-React Component
-      │ เรียก fetchEmployees()
-      ▼
-Zustand Async Action
-      │ fetch() และรอ Response
-      ▼
-แปลงข้อมูลจาก API
-      │ set({ employees })
-      ▼
-Zustand Store
-      │ State เปลี่ยน
-      ▼
-EmployeeList แสดงข้อมูลใหม่
+แผนภาพนี้แสดงเส้นทางเมื่อโหลดข้อมูลและแปลง Model สำเร็จ:
+
+```mermaid
+flowchart TD
+    C["EmployeePage: useEffect ตอน Mount หรือปุ่ม Reload"] --> A["เรียก fetchEmployees()"]
+    A --> L["Zustand ตั้ง loading = true และ error = null"]
+    L --> API["fetch() รอ HTTP Response"]
+    API --> R["ตรวจ response.ok และอ่าน JSON"]
+    R --> M["แปลง ApiUser[] เป็น Employee[] ด้วย map()"]
+    M --> S["set employees ใน Store"]
+    S --> F["finally: loading = false"]
+    F --> UI["EmployeeList อ่าน employees ผ่าน Selector และแสดงข้อมูล"]
+    classDef request fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef data fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class L,API,R request
+    class M,S,UI data
 ```
 
 ### Type ของ Async Action
@@ -324,27 +331,30 @@ catch (error) {
 
 ## 4. ลำดับการเปลี่ยน State
 
-### กรณีสำเร็จ
+### กรณีสำเร็จและเกิดข้อผิดพลาด
 
-```text
-Idle                       Loading                      Success
-┌─────────────────┐       ┌─────────────────┐          ┌─────────────────┐
-│ loading: false  │       │ loading: true   │          │ loading: false  │
-│ error: null     │  ──▶  │ error: null     │   ──▶    │ error: null     │
-│ employees: []   │       │ employees: []   │          │ employees: [...]│
-└─────────────────┘       └─────────────────┘          └─────────────────┘
+```mermaid
+flowchart TD
+    I["Initial: employees = [] / loading = false / error = null"] --> A["fetchEmployees()"]
+    A --> L["Loading: loading = true / error = null / คง employees เดิม"]
+    L --> R{"ผลของ Request และการแปลงข้อมูล"}
+    R -->|สำเร็จ| S["set employees เป็น Array ใหม่จาก Mapping"]
+    R -->|Network / HTTP / JSON หรือ Mapping Error| E["catch: เก็บ error และคง employees เดิม"]
+    S --> FS["finally: loading = false"]
+    E --> FE["finally: loading = false"]
+    FS --> SU["UI แสดงรายชื่อใหม่"]
+    FE --> ER["UI แสดง Error พร้อมรายชื่อเดิมถ้ามี"]
+    SU -->|"กด Reload"| A
+    ER -->|"กด Reload เพื่อลองใหม่"| A
+    classDef pending fill:#fffbeb,stroke:#d97706,color:#78350f
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class L pending
+    class S,FS,SU success
+    class E,FE,ER failure
 ```
 
-### กรณีเกิดข้อผิดพลาด
-
-```text
-Idle                       Loading                      Error
-┌─────────────────┐       ┌─────────────────┐          ┌────────────────────┐
-│ loading: false  │       │ loading: true   │          │ loading: false     │
-│ error: null     │  ──▶  │ error: null     │   ──▶    │ error: "..."       │
-│ employees: []   │       │ employees: []   │          │ employees: []      │
-└─────────────────┘       └─────────────────┘          └────────────────────┘
-```
+เมื่อสำเร็จ Array ใหม่จาก API จะแทนที่ `employees` เดิม แต่เมื่อเกิด Error โค้ดใน `catch` เก็บเฉพาะข้อความ Error โดยไม่ได้ล้างรายชื่อ หากเคยโหลดสำเร็จแล้ว UI จึงยังแสดงข้อมูลเดิมระหว่าง Reload หรือเมื่อ Reload ล้มเหลวได้
 
 State lifecycle ที่ควรจำ:
 
@@ -408,6 +418,44 @@ useEffect(() => {
 > ใน Development ที่เปิด React Strict Mode อาจเห็น API ถูกเรียกสองครั้งตอน Mount เนื่องจาก React ตรวจสอบ Effects เพิ่มเติม ไม่ได้หมายความว่า Zustand ทำงานผิด
 
 เมื่อ Request สำเร็จ `EmployeeList` เดิมจะแสดงข้อมูลใหม่จาก Store โดยไม่ต้องมี Fetch Logic ซ้ำใน List
+
+### ลำดับ Request และการอัปเดต UI
+
+```mermaid
+sequenceDiagram
+    participant P as EmployeePage
+    participant Z as Zustand Store
+    participant API as REST API
+    participant L as EmployeeList
+
+    P->>Z: useEffect เรียก fetchEmployees()
+    Z->>Z: loading = true และ error = null
+    Z-->>P: แสดง Loading
+    Z->>API: GET /users ผ่าน fetch()
+    API-->>Z: HTTP Response
+    alt response.ok เป็น true และ JSON / Mapping สำเร็จ
+        Z->>Z: await response.json() เป็น ApiUser[]
+        Z->>Z: map id เป็น string และกำหนด active = true
+        Z->>Z: set employees เป็น Employee[]
+        Z-->>L: Selector ได้ Array ใหม่และ Re-render
+    else response.ok เป็น false
+        Z->>Z: Throw HTTP Error แล้ว catch เก็บ error
+        Z-->>P: แสดง Error และคง employees เดิม
+    end
+    Z->>Z: finally: loading = false
+    Z-->>P: ปิด Loading และเปิดปุ่ม Reload ใน Challenge
+    Note over P,Z: fetchEmployees() คืน Promise void และจัดการ Error ภายใน Action
+    Note over Z,API: Network Error หรือ JSON / Mapping Error เข้า catch และ finally เช่นกัน
+```
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Async Actions & API](../../../assets-repo/images/workshop05-async-actions-api-hero.png)
+- [Flowchart: Async Action Data Flow](../../../assets-repo/diagrams/workshop05-async-data-flow.mmd)
+- [Flowchart: Loading, Success และ Error](../../../assets-repo/diagrams/workshop05-async-state-flow.mmd)
+- [Sequence Diagram: Fetch และ UI Update](../../../assets-repo/diagrams/workshop05-fetch-sequence.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 ## 6. Workshop Challenge
 
@@ -526,7 +574,7 @@ const loading = useEmployeeStore((state) => state.loading);
 
 <div align="center">
 
-  **ถัดไป:** Workshop 06 — Persist Middleware
+  **ถัดไป:** [Workshop 06 — Persist Middleware](../workshop06-persist/README.md)
 
   [← Workshop 04](../workshop04-objects_arrays/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

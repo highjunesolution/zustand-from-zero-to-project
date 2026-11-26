@@ -1,8 +1,6 @@
 <div align="center">
 
-  <img src="./src/assets/hero.png" alt="Zustand Workshop" width="180" />
-
-  # React + Zustand + TypeScript Workshop
+  <img src="./assets-repo/images/zustand-workshop-gradient-cover-v2.png" alt="Zustand — From Zero to Project | React + TypeScript Workshop" width="900" />
 
   เรียนรู้การจัดการ State ด้วย Zustand ตั้งแต่พื้นฐาน  
   จนสามารถนำไปประยุกต์ใช้กับโปรเจกต์ React + TypeScript ได้จริง
@@ -10,7 +8,6 @@
   ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
   ![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
   ![Zustand](https://img.shields.io/badge/Zustand-5-433E38)
-  ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 
 </div>
 
@@ -86,10 +83,16 @@ pnpm dev
 
 ```text
 zustand-from-zero-to-project/
+├── assets-repo/     # ไฟล์ประกอบเอกสาร Workshop
+│   ├── images/      # ภาพประกอบ
+│   ├── diagrams/    # ต้นฉบับ Mermaid
+│   └── prompts/     # Prompt สำหรับสร้างภาพ
 ├── server/          # Express TypeScript Backend
 │   └── src/
 ├── src/
 │   ├── components/  # React Components
+│   ├── pages/       # หน้าจอที่ใช้กับ Router
+│   ├── routes/      # Route Guards
 │   ├── services/    # API Services
 │   ├── stores/      # Zustand Stores
 │   ├── types/       # TypeScript Types
@@ -100,19 +103,33 @@ zustand-from-zero-to-project/
 └── vite.config.ts
 ```
 
+`assets-repo` ใช้เก็บภาพและ Diagram สำหรับ README โดยแยกจาก Assets ของแอปใน `src/assets` ปัจจุบัน React ไม่ได้ Import ไฟล์จาก `assets-repo` จึงไม่เพิ่มขนาด Bundle หรือถูกคัดลอกไป `dist` ในการ Build
+
 ## แนวคิดสำคัญ
 
-```text
-ผู้ใช้กดปุ่ม
-     ↓
-Component เรียก Action
-     ↓
-Action อัปเดต State ด้วย set()
-     ↓
-Component ที่เลือก State นั้น Re-render
+```mermaid
+flowchart LR
+    U["ผู้ใช้โต้ตอบกับ UI"] --> C["Component เรียก Action"]
+    C --> A["Action อัปเดต State ด้วย set()"]
+    A --> S["Zustand Store เก็บ State ใหม่"]
+    S --> SELECT["Selector อ่านค่าที่ Component ใช้"]
+    SELECT --> Q{"ค่าที่เลือกเปลี่ยนหรือไม่?"}
+    Q -->|เปลี่ยน| R["Component ที่ Subscribe ค่านั้น Re-render"]
+    Q -->|ไม่เปลี่ยน| SAME["ไม่มี Re-render จาก Store Update นี้"]
+    R --> UI["UI แสดงค่าล่าสุด"]
+    classDef action fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef state fill:#fffbeb,stroke:#d97706,color:#78350f
+    classDef view fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class C,A action
+    class S state
+    class SELECT,R,UI view
 ```
 
 Zustand เหมาะกับ State ที่หลาย Components ต้องใช้ร่วมกัน ส่วน State ที่ใช้เฉพาะภายใน Component ยังสามารถใช้ `useState` ได้ตามปกติ
+
+Diagram นี้แสดงการ Re-render จาก Store Update โดย Component ยังอาจ Re-render จากสาเหตุอื่น เช่น Local State หรือ Parent Component ได้
+
+ไฟล์ประกอบหน้านี้: [ภาพปกพร้อมชื่อโปรเจกต์](./assets-repo/images/zustand-workshop-gradient-cover-v2.png) · [ต้นฉบับ Mermaid](./assets-repo/diagrams/zustand-workshop-state-flow.mmd) · [Prompt สร้างภาพ](./assets-repo/prompts/zustand-workshop-gradient-cover-v2.txt)
 
 ---
 

@@ -1,0 +1,12 @@
+flowchart LR
+    OLD["Array เดิม: Tony, Junior"] -->|"index 0"| T["Object Tony เดิม"]
+    OLD -->|"index 1"| J["Object Junior เดิม"]
+    NEW["Array ใหม่: Tony, Junior, John"] -->|"index 0: Reference เดิม"| T
+    NEW -->|"index 1: Reference เดิม"| J
+    NEW -->|"index 2: เพิ่มท้าย Array"| N["Object John ที่ส่งให้ addEmployee"]
+    classDef old fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef fresh fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef added fill:#fffbeb,stroke:#d97706,color:#78350f
+    class OLD old
+    class NEW fresh
+    class N added

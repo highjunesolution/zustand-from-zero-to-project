@@ -1,0 +1,13 @@
+flowchart TD
+    F["LoginForm: email และ password อยู่ใน Local State"] -->|"login(input)"| A["Zustand Login Action"]
+    A -->|"await mockLogin(input)"| M["Mock Authentication Service"]
+    M -->|"AuthUser เมื่อสำเร็จ"| U["set user ใน Store โดยไม่มี Password"]
+    U --> S["Zustand Auth Store: user / loading / error"]
+    S -->|"Selector"| H["Header"]
+    S -->|"Selector"| D["Dashboard"]
+    S -->|"Selector"| P["AuthProfile"]
+    S -->|"loading และ error"| F
+    classDef local fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef shared fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class F local
+    class S,H,D,P shared

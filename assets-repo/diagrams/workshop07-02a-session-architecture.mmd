@@ -1,0 +1,13 @@
+flowchart TD
+    A["LoginForm รับ Email และ Password"] --> B["Zustand เรียก loginApi(input)"]
+    B --> C["Browser ส่ง POST /api/auth/login"]
+    C --> D["Express ตรวจ Input และ Credentials"]
+    D --> E["สร้าง Session ID ใหม่และบันทึก User ใน Session Store"]
+    E --> F["Response: Set-Cookie และ JSON user"]
+    F --> G["Browser เก็บ Session ID ใน HttpOnly Cookie"]
+    F --> H["loginApi() อ่าน User จาก JSON Response"]
+    H --> I["Zustand เก็บ AuthUser เพื่อแสดง Profile"]
+    classDef cookie fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    classDef ui fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class G cookie
+    class H,I ui

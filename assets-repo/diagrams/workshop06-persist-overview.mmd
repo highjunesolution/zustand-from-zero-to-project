@@ -1,0 +1,16 @@
+flowchart TD
+    A["ผู้ใช้เปลี่ยน State ผ่าน Action"] --> B["Zustand Store อัปเดต State ใน Memory"]
+    B --> C["persist เลือกข้อมูลตาม Options และแปลงเป็น JSON"]
+    C --> D["เขียนลง Browser localStorage ตาม Key ใน name"]
+    D --> E["Refresh หน้าเว็บ: Memory เดิมหาย แต่ Storage ยังอยู่"]
+    E --> F["สร้าง Store ใหม่จากค่าเริ่มต้น"]
+    F --> G["persist อ่าน Key เดิมจาก localStorage"]
+    G --> H{"มีข้อมูลเดิมที่ใช้งานได้?"}
+    H -->|มี| I["Rehydration: รวม Persisted State เข้ากับ Store"]
+    H -->|ไม่มี| J["ใช้ State เริ่มต้น"]
+    I --> K["React อ่าน State ผ่าน Selector"]
+    J --> K
+    classDef memory fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef storage fill:#fffbeb,stroke:#d97706,color:#78350f
+    class B,F,I,J,K memory
+    class D,G storage

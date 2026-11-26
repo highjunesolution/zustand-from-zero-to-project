@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User
+    participant App as React App
+    participant Z as Zustand
+    participant Browser
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>App: เปิดแอปหรือ Refresh
+    App->>Z: useEffect เรียก checkAuth()
+    Z->>Z: authStatus = checking
+    Z-->>App: แสดง Checking authentication
+    Z->>Browser: getCurrentUserApi() ใช้ fetch
+    Browser->>API: GET /api/auth/me พร้อม Cookie ถ้ามี
+    API->>Store: โหลด Session ตาม Session ID
+    Store-->>API: Session ที่พบ หรือไม่พบ Session
+    alt Session มี User
+        API-->>Browser: 200 พร้อม JSON user
+        Browser-->>Z: getCurrentUserApi() คืน AuthUser
+        Z->>Z: user = AuthUser และ authenticated
+        Z-->>App: แสดง AuthProfile
+    else ไม่มี User ใน Session
+        API-->>Browser: 401 Unauthenticated
+        Browser-->>Z: getCurrentUserApi() คืน null
+        Z->>Z: user = null และ unauthenticated
+        Z-->>App: แสดง LoginForm
+    end
+    Note over Browser,API: Browser จัดการ HttpOnly Cookie โดย React ไม่อ่าน Session ID
+    Note over App,Z: Network หรือ Server Error ใช้ authStatus = error ตาม Flowchart

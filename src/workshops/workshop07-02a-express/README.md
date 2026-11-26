@@ -11,6 +11,11 @@
 
   [← Workshop 07.1](../workshop07-01-authentication_store/README.md) · [หน้าหลัก](../../../README.md) · [Express Session Docs](https://expressjs.com/en/resources/middleware/session.html)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop07-02a-express-login-hero.png" alt="Login Form ส่งข้อมูลให้ Express สร้าง Session ก่อน Browser เก็บ Cookie และแสดง User Profile" width="900" />
+
 </div>
 
 ---
@@ -80,31 +85,20 @@ Workshop 07.2 แบ่งเป็นสามช่วง:
 
 Workshop นี้จะใช้ **Server-side Session**:
 
-```text
-┌─────────────────────┐
-│   React + Zustand   │
-│ Email + Password    │
-└──────────┬──────────┘
-           │ POST /api/auth/login
-           ▼
-┌─────────────────────┐
-│ Express TypeScript  │
-│ ตรวจ Credentials    │
-│ และสร้าง Session    │
-└──────────┬──────────┘
-           │ Set-Cookie
-           ▼
-┌─────────────────────┐
-│       Browser       │
-│ เก็บ Session ID ใน  │
-│ HttpOnly Cookie     │
-└──────────┬──────────┘
-           │ AuthUser จาก Response
-           ▼
-┌─────────────────────┐
-│    Zustand Store    │
-│ เก็บ User สำหรับ UI │
-└─────────────────────┘
+```mermaid
+flowchart TD
+    A["LoginForm รับ Email และ Password"] --> B["Zustand เรียก loginApi(input)"]
+    B --> C["Browser ส่ง POST /api/auth/login"]
+    C --> D["Express ตรวจ Input และ Credentials"]
+    D --> E["สร้าง Session ID ใหม่และบันทึก User ใน Session Store"]
+    E --> F["Response: Set-Cookie และ JSON user"]
+    F --> G["Browser เก็บ Session ID ใน HttpOnly Cookie"]
+    F --> H["loginApi() อ่าน User จาก JSON Response"]
+    H --> I["Zustand เก็บ AuthUser เพื่อแสดง Profile"]
+    classDef cookie fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    classDef ui fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class G cookie
+    class H,I ui
 ```
 
 หลักการทำงาน:
@@ -509,6 +503,51 @@ req.session.save((saveErr) => {
 
 โค้ดนี้บันทึกข้อมูล Session ให้สำเร็จก่อนส่ง Response กลับ Frontend เพื่อให้ Request ถัดไปค้นหา Session ได้
 
+### ลำดับ Request และ Response ของ Login
+
+แผนภาพนี้แสดงการแยกผลลัพธ์ `400`, `401` และ `200` ตาม Login Route ในบทนี้ โดยกรณีสำเร็จจะบันทึก Session ก่อนตอบ Response:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as LoginForm
+    participant Z as Zustand
+    participant Browser
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>UI: Submit Email และ Password
+    UI->>Z: login(input)
+    Z->>Z: loading = true และ error = null
+    Z->>Browser: loginApi(input) ใช้ fetch
+    Browser->>API: POST /api/auth/login พร้อม JSON
+    alt Input ไม่ใช่ String
+        API-->>Browser: 400 พร้อมข้อความ Validation
+        Browser-->>Z: loginApi() Throw Error
+        Z->>Z: user = null และเก็บ Error
+        Z-->>UI: แสดงข้อความ Validation
+    else Credentials ไม่ถูกต้อง
+        API-->>Browser: 401 Invalid email or password
+        Browser-->>Z: loginApi() Throw Error
+        Z->>Z: user = null และเก็บ Error
+        Z-->>UI: แสดง Login Error
+    else Credentials ถูกต้อง
+        API->>Store: req.session.regenerate()
+        Store-->>API: Session ID ใหม่
+        API->>API: req.session.user = demoUser
+        API->>Store: req.session.save()
+        Store-->>API: บันทึก Session สำเร็จ
+        API-->>Browser: 200 พร้อม Set-Cookie และ JSON user
+        Browser->>Browser: เก็บ HttpOnly Cookie ตามนโยบาย Browser
+        Browser-->>Z: loginApi() คืน AuthUser จาก JSON
+        Z->>Z: set user และคืน true
+        Z-->>UI: UI แสดง Profile ตาม User ใน Store
+    end
+    Z->>Z: finally: loading = false
+    Note over API,Store: หาก regenerate หรือ save ล้มเหลว โค้ดส่ง next(err) แทน Response สำเร็จ
+    Note over Browser,Z: React ไม่อ่าน Session ID จาก HttpOnly Cookie
+```
+
 ## 8. เปิด HTTP Server
 
 เพิ่มท้ายไฟล์ `server.ts`:
@@ -581,17 +620,21 @@ export default defineConfig({
 
 หากโปรเจกต์เดิมมี Plugins หรือ Options อื่น ให้คงไว้และเพิ่มเฉพาะ `server.proxy`
 
-```text
-Browser
-http://localhost:5173/api/auth/login
-             │
-             ▼
-         Vite Proxy
-             │
-             ▼
-Express Backend
-http://127.0.0.1:3001/api/auth/login
+```mermaid
+flowchart LR
+    B["Browser: localhost:5173"] -->|"POST /api/auth/login"| V["Vite Dev Server: localhost:5173"]
+    V -->|"Proxy เฉพาะ /api"| E["Express API: 127.0.0.1:3001"]
+    E -->|"200: JSON user และ Set-Cookie"| V
+    V -->|"ส่ง Response กลับ"| B
+    classDef browser fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef proxy fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef server fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    class B browser
+    class V proxy
+    class E server
 ```
+
+ภาพนี้แสดงเส้นทาง Request และ Response เมื่อ Login สำเร็จใน Development Browser เรียก `localhost:5173` ส่วน Vite เป็นผู้ส่ง Request ต่อไปยัง Express ที่ `127.0.0.1:3001`
 
 React จึงเรียก `/api/auth/login` ได้โดยไม่ต้องระบุ `http://127.0.0.1:3001` โดยตรง และ Browser เห็น API เป็น Same-origin จึงไม่ต้องตั้งค่า Cross-origin CORS สำหรับ Flow นี้
 
@@ -599,6 +642,15 @@ React จึงเรียก `/api/auth/login` ได้โดยไม่ต�
 > ระหว่าง Workshop ให้เปิด React ด้วย `http://localhost:5173` อย่างสม่ำเสมอ อย่าสลับกับ `127.0.0.1` เพราะ Cookie ผูกกับ Host
 
 อ่านเพิ่มเติมที่ [Vite: Server proxy](https://vite.dev/config/server-options.html#server-proxy)
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Express Login API](../../../assets-repo/images/workshop07-02a-express-login-hero.png)
+- [Flowchart: Session, Cookie และ Zustand](../../../assets-repo/diagrams/workshop07-02a-session-architecture.mmd)
+- [Sequence Diagram: Login API](../../../assets-repo/diagrams/workshop07-02a-login-sequence.mmd)
+- [Flowchart: Vite Proxy](../../../assets-repo/diagrams/workshop07-02a-vite-proxy-flow.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 ## 10. สร้าง Authentication Service
 
@@ -863,7 +915,7 @@ Workshop 07.2.2 จะเพิ่ม `GET /api/auth/me` เพื่อให�
 
 <div align="center">
 
-  **ถัดไป:** Workshop 07.2.2 — Restore Authentication Session
+  **ถัดไป:** [Workshop 07.2.2 — Restore Authentication Session](../workshop07-02b-restore_authentication_session/README.md)
 
   [← Workshop 07.1](../workshop07-01-authentication_store/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

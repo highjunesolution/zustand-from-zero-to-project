@@ -1,0 +1,13 @@
+flowchart TD
+    C["EmployeePage: useEffect ตอน Mount หรือปุ่ม Reload"] --> A["เรียก fetchEmployees()"]
+    A --> L["Zustand ตั้ง loading = true และ error = null"]
+    L --> API["fetch() รอ HTTP Response"]
+    API --> R["ตรวจ response.ok และอ่าน JSON"]
+    R --> M["แปลง ApiUser[] เป็น Employee[] ด้วย map()"]
+    M --> S["set employees ใน Store"]
+    S --> F["finally: loading = false"]
+    F --> UI["EmployeeList อ่าน employees ผ่าน Selector และแสดงข้อมูล"]
+    classDef request fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef data fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class L,API,R request
+    class M,S,UI data

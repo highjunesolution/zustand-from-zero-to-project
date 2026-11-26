@@ -1,0 +1,38 @@
+sequenceDiagram
+    actor User
+    participant UI as React / AuthProfile
+    participant Z as Zustand
+    participant Browser
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>UI: กด Logout
+    UI->>Z: logout()
+    Z->>Z: ตรวจ Guard และตั้ง logoutLoading = true
+    Z->>Browser: logoutApi() ใช้ fetch
+    Browser->>API: POST /api/auth/logout พร้อม Session Cookie
+    API->>Store: req.session.destroy()
+    alt ทำลาย Session สำเร็จ
+        Store-->>API: Callback ไม่มี Error
+        API-->>Browser: 204 พร้อม Set-Cookie เพื่อลบ workshop.sid
+        Browser->>Browser: ลบ Session Cookie
+        Browser-->>Z: fetch สำเร็จ
+        Z->>Z: user = null และ unauthenticated
+        Z-->>UI: แสดง LoginForm
+    else Session Store ล้มเหลว
+        Store-->>API: Callback ส่ง Error
+        API->>API: next(err)
+        API-->>Browser: Error Response
+        Browser-->>Z: logoutApi() Throw Error
+        Z->>Z: เก็บ Error และคง User เดิมไว้
+        Z-->>UI: แสดง Error ให้ลองใหม่
+    end
+    Z->>Z: finally: logoutLoading = false
+
+    opt Refresh หลัง Logout สำเร็จ
+        User->>Browser: Refresh
+        Browser->>API: GET /api/auth/me โดยไม่มี Session Cookie เดิม
+        API-->>Browser: 401 Unauthenticated
+        Browser-->>Z: getCurrentUserApi() คืน null
+        Z-->>UI: แสดง LoginForm
+    end

@@ -1,0 +1,15 @@
+flowchart LR
+    S["Employee Store"] --> E["employees: ข้อมูลจาก API"]
+    S --> L["loading: สถานะ Request"]
+    S --> R["error: ข้อผิดพลาดชั่วคราว"]
+    S --> Q["searchTerm: คำค้นหาของผู้ใช้"]
+    Q --> P["partialize คืนเฉพาะ searchTerm"]
+    P --> LS["localStorage: employee-preferences"]
+    E --> M["อยู่ใน Memory และเริ่มใหม่หลัง Refresh"]
+    L --> M
+    R --> M
+    LS --> H["Rehydrate searchTerm หลัง Refresh"]
+    classDef persisted fill:#fffbeb,stroke:#d97706,color:#78350f
+    classDef transient fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    class Q,P,LS,H persisted
+    class E,L,R,M transient

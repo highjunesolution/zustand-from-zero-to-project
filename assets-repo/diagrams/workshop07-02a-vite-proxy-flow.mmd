@@ -1,0 +1,11 @@
+flowchart LR
+    B["Browser: localhost:5173"] -->|"POST /api/auth/login"| V["Vite Dev Server: localhost:5173"]
+    V -->|"Proxy เฉพาะ /api"| E["Express API: 127.0.0.1:3001"]
+    E -->|"200: JSON user และ Set-Cookie"| V
+    V -->|"ส่ง Response กลับ"| B
+    classDef browser fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef proxy fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef server fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    class B browser
+    class V proxy
+    class E server

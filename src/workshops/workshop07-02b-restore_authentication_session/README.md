@@ -11,6 +11,11 @@
 
   [← Workshop 07.2.1](../workshop07-02a-express/README.md) · [หน้าหลัก](../../../README.md) · [Express Session Docs](https://expressjs.com/en/resources/middleware/session.html)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop07-02b-restore-session-hero.png" alt="Browser หลัง Refresh ใช้ Session Cookie เดิมให้ Backend ตรวจสอบและโหลด User กลับเข้า Zustand" width="900" />
+
 </div>
 
 ---
@@ -91,25 +96,22 @@ React จึงแสดง `AuthProfile` ได้ แต่เมื่อ Ref
 
 เราจึงต้องถาม Backend ว่า Session ที่ Browser ส่งมายังถูกต้องหรือไม่:
 
-```text
-┌──────────────────────────┐
-│ Refresh React App        │
-│ Zustand: user = null     │
-└────────────┬─────────────┘
-             │ GET /api/auth/me
-             │ Browser ส่ง Session Cookie
-             ▼
-┌──────────────────────────┐
-│ Express Session          │
-│ โหลด Session จาก Store   │
-└────────────┬─────────────┘
-             │
-      ┌──────┴──────┐
-      ▼             ▼
-┌───────────┐  ┌───────────────┐
-│ HTTP 200  │  │ HTTP 401      │
-│ ส่ง User  │  │ ไม่มี User    │
-└───────────┘  └───────────────┘
+```mermaid
+flowchart TD
+    A["Refresh หน้าเว็บหลัง Login"] --> B["Zustand ถูกสร้างใหม่: user = null"]
+    A --> C["Browser อาจยังมี HttpOnly Session Cookie"]
+    B --> D["App เรียก checkAuth()"]
+    C --> E["Browser แนบ Cookie ให้ GET /api/auth/me"]
+    D --> E
+    E --> F["Express โหลด Session จาก Server-side Store"]
+    F --> G{"Session มี User หรือไม่?"}
+    G -->|มี: HTTP 200| H["ส่ง AuthUser ให้ Frontend"]
+    H --> I["Zustand เก็บ User และ UI แสดง AuthProfile"]
+    G -->|ไม่มี: HTTP 401| J["Zustand เก็บ null และ UI แสดง LoginForm"]
+    classDef restored fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef guest fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    class H,I restored
+    class J guest
 ```
 
 เราไม่ได้นำ Session ID ไปเก็บใน Zustand เพราะ Browser จัดการ HttpOnly Cookie ให้อยู่แล้ว Frontend เก็บเฉพาะ User และสถานะที่จำเป็นสำหรับ UI
@@ -386,21 +388,73 @@ checkAuth: async () => {
 
 ### ลำดับการทำงาน
 
-```text
-checkAuth()
-    │
-    ├─ set authStatus = "checking"
-    │
-    └─ GET /api/auth/me
-         │
-         ├─ 200 ───────▶ user + "authenticated"
-         │
-         ├─ 401 ───────▶ null + "unauthenticated"
-         │
-         └─ Error ─────▶ null + "error"
+```mermaid
+flowchart TD
+    A["checkAuth() ตอนเปิดแอปหรือกด Retry"] --> B["authStatus = checking และ error = null"]
+    B --> C["UI แสดง Checking authentication"]
+    C --> D["await getCurrentUserApi()"]
+    D --> E{"ผลการตรวจสอบ Session"}
+    E -->|200: ได้ AuthUser| F["user = AuthUser และ authStatus = authenticated"]
+    E -->|401: คืน null| G["user = null และ authStatus = unauthenticated"]
+    E -->|Network Error หรือ Server Error| H["user = null และ authStatus = error พร้อมข้อความ"]
+    F --> I["แสดง AuthProfile"]
+    G --> J["แสดง LoginForm"]
+    H --> K["แสดง Session verification failed"]
+    K -->|กด Retry หลังทำ Challenge| A
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef guest fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class F,I success
+    class G,J guest
+    class H,K failure
 ```
 
 เราไม่ควรสรุปว่าผู้ใช้ Logout แล้วเพียงเพราะ Backend ติดต่อไม่ได้ เพราะ Network Error ไม่ได้พิสูจน์ว่า Session ไม่มีผล
+
+### ลำดับ Request และ Response
+
+แผนภาพนี้แสดงว่า Browser เป็นผู้แนบ Cookie ให้ Backend ส่วน Zustand รับเฉพาะผลลัพธ์ User หรือ `null` จาก Service:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant App as React App
+    participant Z as Zustand
+    participant Browser
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>App: เปิดแอปหรือ Refresh
+    App->>Z: useEffect เรียก checkAuth()
+    Z->>Z: authStatus = checking
+    Z-->>App: แสดง Checking authentication
+    Z->>Browser: getCurrentUserApi() ใช้ fetch
+    Browser->>API: GET /api/auth/me พร้อม Cookie ถ้ามี
+    API->>Store: โหลด Session ตาม Session ID
+    Store-->>API: Session ที่พบ หรือไม่พบ Session
+    alt Session มี User
+        API-->>Browser: 200 พร้อม JSON user
+        Browser-->>Z: getCurrentUserApi() คืน AuthUser
+        Z->>Z: user = AuthUser และ authenticated
+        Z-->>App: แสดง AuthProfile
+    else ไม่มี User ใน Session
+        API-->>Browser: 401 Unauthenticated
+        Browser-->>Z: getCurrentUserApi() คืน null
+        Z->>Z: user = null และ unauthenticated
+        Z-->>App: แสดง LoginForm
+    end
+    Note over Browser,API: Browser จัดการ HttpOnly Cookie โดย React ไม่อ่าน Session ID
+    Note over App,Z: Network หรือ Server Error ใช้ authStatus = error ตาม Flowchart
+```
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Restore Authentication Session](../../../assets-repo/images/workshop07-02b-restore-session-hero.png)
+- [Flowchart: Refresh และ Session เดิม](../../../assets-repo/diagrams/workshop07-02b-refresh-overview.mmd)
+- [Flowchart: Authentication Status และ Retry](../../../assets-repo/diagrams/workshop07-02b-auth-status-flow.mmd)
+- [Sequence Diagram: Restore Session](../../../assets-repo/diagrams/workshop07-02b-restore-sequence.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 ### 6.1 ปรับ Login Action
 
@@ -708,7 +762,7 @@ Workshop 07.2.3 จะเพิ่ม Backend Logout API เพื่อทำ�
 
 <div align="center">
 
-  **ถัดไป:** Workshop 07.2.3 — Logout & Session Destruction
+  **ถัดไป:** [Workshop 07.2.3 — Logout & Session Destruction](../workshop07-02c-logout_session_destruction/README.md)
 
   [← Workshop 07.2.1](../workshop07-02a-express/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

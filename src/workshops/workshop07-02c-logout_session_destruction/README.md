@@ -11,6 +11,11 @@
 
   [← Workshop 07.2.2](../workshop07-02b-restore_authentication_session/README.md) · [หน้าหลัก](../../../README.md) · [Express Session Docs](https://expressjs.com/en/resources/middleware/session.html)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop07-02c-logout-session-hero.png" alt="Logout ยกเลิก Session ฝั่ง Server ลบ Cookie ใน Browser และกลับไปหน้า Login" width="900" />
+
 </div>
 
 ---
@@ -81,19 +86,18 @@ logout: () => {
 
 โค้ดนี้เปลี่ยน UI ได้ แต่ไม่ได้ติดต่อ Backend:
 
-```text
-ก่อน Logout
-┌─────────────────────┐    ┌─────────────────────┐
-│ Zustand             │    │ Backend Session     │
-│ authenticated       │    │ ยังใช้งานได้        │
-└──────────┬──────────┘    └─────────────────────┘
-           │ set({ user: null })
-           ▼
-หลัง Logout แบบเดิม
-┌─────────────────────┐    ┌─────────────────────┐
-│ Zustand             │    │ Backend Session     │
-│ ไม่มี User          │    │ ยังใช้งานได้!       │
-└─────────────────────┘    └─────────────────────┘
+```mermaid
+flowchart TD
+    A["Login สำเร็จ: Zustand มี User และ Backend มี Session"] --> B["ล้างเฉพาะ Zustand: user = null"]
+    B --> C["UI แสดง LoginForm แต่ Backend Session ยังอยู่"]
+    C --> D["Refresh หน้าเว็บ"]
+    D --> E["checkAuth เรียก GET /api/auth/me พร้อม Cookie เดิม"]
+    E --> F["Backend พบ Session และตอบ 200 พร้อม User"]
+    F --> G["Zustand Restore User และ UI แสดง AuthProfile อีกครั้ง"]
+    classDef warning fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    classDef restored fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class B,C warning
+    class F,G restored
 ```
 
 เมื่อ Refresh หน้าเว็บ `checkAuth()` จะเรียก `GET /api/auth/me` อีกครั้ง Backend ยังพบ Session เดิม จึงตอบ HTTP `200` และส่ง User กลับมา ทำให้ React แสดง `AuthProfile` อีกครั้ง
@@ -384,23 +388,22 @@ logout: async () => {
 
 ### ลำดับการเปลี่ยน State
 
-```text
-Authenticated
-user: AuthUser
-logoutLoading: false
-        │
-        │ logout()
-        ▼
-Request Pending
-user: AuthUser
-logoutLoading: true
-        │
-   ┌────┴───────────────┐
-   ▼                    ▼
-Success                Error
-user: null             user: AuthUser
-unauthenticated        เก็บ Error
-logoutLoading: false   logoutLoading: false
+```mermaid
+flowchart TD
+    A["เรียก logout()"] --> B{"logoutLoading เป็น true?"}
+    B -->|ใช่| C["Return: ไม่เริ่ม Request ซ้ำ"]
+    B -->|ไม่ใช่| D["logoutLoading = true และ error = null"]
+    D --> E["await logoutApi()"]
+    E --> F{"ได้รับ Response สำเร็จ?"}
+    F -->|ใช่: 204| G["user = null และ authStatus = unauthenticated"]
+    F -->|ไม่: HTTP Error หรือ Network Error| H["เก็บ Error และคง User เดิมไว้"]
+    G --> I["finally: logoutLoading = false"]
+    H --> I
+    I --> J["UI แสดง LoginForm หรือเปิดให้ Retry ตามผลลัพธ์"]
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class G success
+    class H failure
 ```
 
 เมื่อ Logout ล้มเหลว เราไม่ล้าง `user` เพราะ Backend ยังไม่ได้ยืนยันว่า Session ถูกทำลายสำเร็จ ผู้ใช้ควรเห็น Error และสามารถลองใหม่ได้
@@ -498,42 +501,59 @@ export default AuthProfile;
 
 ## 7. ทำความเข้าใจ Logout Data Flow
 
-```text
-┌─────────────────────────┐
-│ AuthProfile             │
-│ onClick → logout()      │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ Zustand                 │
-│ logoutLoading = true    │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ Auth Service            │
-│ await logoutApi()       │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ Express                 │
-│ destroy Session         │
-│ clear Cookie            │
-└────────────┬────────────┘
-             │ HTTP 204
-             ▼
-┌─────────────────────────┐
-│ Zustand                 │
-│ user = null             │
-│ unauthenticated         │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ App.tsx                 │
-│ แสดง LoginForm          │
-└─────────────────────────┘
+แผนภาพนี้แสดงลำดับการทำงานทั้งกรณีสำเร็จและ Session Store ล้มเหลว รวมถึงการตรวจ Session อีกครั้งหลัง Refresh:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as React / AuthProfile
+    participant Z as Zustand
+    participant Browser
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>UI: กด Logout
+    UI->>Z: logout()
+    Z->>Z: ตรวจ Guard และตั้ง logoutLoading = true
+    Z->>Browser: logoutApi() ใช้ fetch
+    Browser->>API: POST /api/auth/logout พร้อม Session Cookie
+    API->>Store: req.session.destroy()
+    alt ทำลาย Session สำเร็จ
+        Store-->>API: Callback ไม่มี Error
+        API-->>Browser: 204 พร้อม Set-Cookie เพื่อลบ workshop.sid
+        Browser->>Browser: ลบ Session Cookie
+        Browser-->>Z: fetch สำเร็จ
+        Z->>Z: user = null และ unauthenticated
+        Z-->>UI: แสดง LoginForm
+    else Session Store ล้มเหลว
+        Store-->>API: Callback ส่ง Error
+        API->>API: next(err)
+        API-->>Browser: Error Response
+        Browser-->>Z: logoutApi() Throw Error
+        Z->>Z: เก็บ Error และคง User เดิมไว้
+        Z-->>UI: แสดง Error ให้ลองใหม่
+    end
+    Z->>Z: finally: logoutLoading = false
+
+    opt Refresh หลัง Logout สำเร็จ
+        User->>Browser: Refresh
+        Browser->>API: GET /api/auth/me โดยไม่มี Session Cookie เดิม
+        API-->>Browser: 401 Unauthenticated
+        Browser-->>Z: getCurrentUserApi() คืน null
+        Z-->>UI: แสดง LoginForm
+    end
 ```
 
-State จะถูกล้างหลัง Backend ตอบสำเร็จเท่านั้น จึงมั่นใจได้ว่า UI และ Server-side Session สอดคล้องกัน
+State จะถูกล้างหลัง Backend ตอบสำเร็จ โดย Browser เป็นผู้จัดการ Cookie จาก Response ส่วน Zustand เก็บสถานะที่ใช้แสดง UI
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Logout & Session Destruction](../../../assets-repo/images/workshop07-02c-logout-session-hero.png)
+- [Flowchart: ล้างเฉพาะ Frontend State](../../../assets-repo/diagrams/workshop07-02c-frontend-only-logout.mmd)
+- [Flowchart: Async Logout State](../../../assets-repo/diagrams/workshop07-02c-logout-state-flow.mmd)
+- [Sequence Diagram: Logout และ Refresh](../../../assets-repo/diagrams/workshop07-02c-logout-sequence.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 ## 8. ทดสอบระบบ End-to-End
 

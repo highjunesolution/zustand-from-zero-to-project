@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User
+    participant F as LoginForm
+    participant Z as Zustand Auth Store
+    participant M as mockLogin
+    participant A as App / AuthProfile
+
+    User->>F: กรอก Email และ Password
+    F->>F: เก็บใน Local State
+    F->>Z: login(input)
+    Z->>Z: loading = true และ error = null
+    Z->>M: await mockLogin(input)
+    M->>M: จำลองการรอ 500 ms
+    alt Email หรือ Password ว่าง
+        M-->>Z: Throw Required Error
+        Z->>Z: user = null และเก็บ Error
+    else Email เป็น fail@example.com
+        M-->>Z: Throw Invalid Credentials
+        Z->>Z: user = null และเก็บ Error
+    else ข้อมูลผ่านเงื่อนไข Mock
+        M-->>Z: คืน AuthUser ที่ไม่มี Password
+        Z->>Z: set user
+    end
+    Z->>Z: finally: loading = false
+    Z-->>F: Promise คืน true หรือ false
+    Note over F: ตัวอย่างใช้ void login(input) จึงไม่ใช้ค่า boolean
+    Z-->>A: Store update ทำให้ UI Re-render
+    Note over A: มี User แสดง Profile; ไม่มี User แสดง Form
+    Note over F,M: จำลองใน Frontend โดยไม่มี HTTP Request หรือ Server Session

@@ -1,0 +1,15 @@
+flowchart LR
+    U["ผู้ใช้โต้ตอบกับ UI"] --> C["Component เรียก Action"]
+    C --> A["Action อัปเดต State ด้วย set()"]
+    A --> S["Zustand Store เก็บ State ใหม่"]
+    S --> SELECT["Selector อ่านค่าที่ Component ใช้"]
+    SELECT --> Q{"ค่าที่เลือกเปลี่ยนหรือไม่?"}
+    Q -->|เปลี่ยน| R["Component ที่ Subscribe ค่านั้น Re-render"]
+    Q -->|ไม่เปลี่ยน| SAME["ไม่มี Re-render จาก Store Update นี้"]
+    R --> UI["UI แสดงค่าล่าสุด"]
+    classDef action fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef state fill:#fffbeb,stroke:#d97706,color:#78350f
+    classDef view fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class C,A action
+    class S state
+    class SELECT,R,UI view

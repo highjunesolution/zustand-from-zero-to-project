@@ -1,0 +1,18 @@
+flowchart TD
+    A["checkAuth() ตอนเปิดแอปหรือกด Retry"] --> B["authStatus = checking และ error = null"]
+    B --> C["UI แสดง Checking authentication"]
+    C --> D["await getCurrentUserApi()"]
+    D --> E{"ผลการตรวจสอบ Session"}
+    E -->|200: ได้ AuthUser| F["user = AuthUser และ authStatus = authenticated"]
+    E -->|401: คืน null| G["user = null และ authStatus = unauthenticated"]
+    E -->|Network Error หรือ Server Error| H["user = null และ authStatus = error พร้อมข้อความ"]
+    F --> I["แสดง AuthProfile"]
+    G --> J["แสดง LoginForm"]
+    H --> K["แสดง Session verification failed"]
+    K -->|กด Retry หลังทำ Challenge| A
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef guest fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class F,I success
+    class G,J guest
+    class H,K failure

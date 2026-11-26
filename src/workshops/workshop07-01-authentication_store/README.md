@@ -11,6 +11,11 @@
 
   [← Workshop 06](../workshop06-persist/README.md) · [หน้าหลัก](../../../README.md) · [Zustand Docs](https://zustand.docs.pmnd.rs/)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop07-01-authentication-store-hero.png" alt="Login Form ส่งข้อมูลผ่าน Mock Service แล้ว Zustand แชร์ข้อมูล User ให้ Header และ Profile" width="900" />
+
 </div>
 
 ---
@@ -61,26 +66,20 @@ Workshop 07 แบ่งเป็นสามช่วง:
 
 สมมติว่าแอปมี `LoginPage`, `Header` และ `Dashboard` เมื่อ Login สำเร็จ ทุก Component ที่เกี่ยวข้องต้องทราบว่าผู้ใช้ปัจจุบันคือใคร
 
-```text
-┌─────────────────────┐
-│     Login Form      │
-│ Email + Password    │
-└──────────┬──────────┘
-           │ login(input)
-           ▼
-┌─────────────────────┐
-│ Authentication     │
-│ Service / Backend  │
-└──────────┬──────────┘
-           │ AuthUser
-           ▼
-┌─────────────────────┐
-│ Zustand Auth Store │
-│ user/loading/error │
-└──────┬────────┬─────┘
-       │        │
-       ▼        ▼
-   Header    Dashboard
+```mermaid
+flowchart TD
+    F["LoginForm: email และ password อยู่ใน Local State"] -->|"login(input)"| A["Zustand Login Action"]
+    A -->|"await mockLogin(input)"| M["Mock Authentication Service"]
+    M -->|"AuthUser เมื่อสำเร็จ"| U["set user ใน Store โดยไม่มี Password"]
+    U --> S["Zustand Auth Store: user / loading / error"]
+    S -->|"Selector"| H["Header"]
+    S -->|"Selector"| D["Dashboard"]
+    S -->|"Selector"| P["AuthProfile"]
+    S -->|"loading และ error"| F
+    classDef local fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef shared fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class F local
+    class S,H,D,P shared
 ```
 
 Zustand มีหน้าที่จัดการ **Authentication State ที่ Frontend ใช้แสดง UI** ส่วน Backend ต้องเป็นผู้ตรวจสอบ Password, Session และสิทธิ์ของทุก Request
@@ -194,20 +193,36 @@ export async function mockLogin(input: LoginInput): Promise<AuthUser> {
 
 ### Data Flow ของ Mock Service
 
-```text
-LoginForm
-    │ login({ email, password })
-    ▼
-Zustand Auth Store
-    │ await mockLogin(input)
-    ▼
-Mock Authentication Service
-    │ Promise<AuthUser>
-    ▼
-set({ user })
-    │
-    ▼
-React แสดง AuthProfile
+```mermaid
+sequenceDiagram
+    actor User
+    participant F as LoginForm
+    participant Z as Zustand Auth Store
+    participant M as mockLogin
+    participant A as App / AuthProfile
+
+    User->>F: กรอก Email และ Password
+    F->>F: เก็บใน Local State
+    F->>Z: login(input)
+    Z->>Z: loading = true และ error = null
+    Z->>M: await mockLogin(input)
+    M->>M: จำลองการรอ 500 ms
+    alt Email หรือ Password ว่าง
+        M-->>Z: Throw Required Error
+        Z->>Z: user = null และเก็บ Error
+    else Email เป็น fail@example.com
+        M-->>Z: Throw Invalid Credentials
+        Z->>Z: user = null และเก็บ Error
+    else ข้อมูลผ่านเงื่อนไข Mock
+        M-->>Z: คืน AuthUser ที่ไม่มี Password
+        Z->>Z: set user
+    end
+    Z->>Z: finally: loading = false
+    Z-->>F: Promise คืน true หรือ false
+    Note over F: ตัวอย่างใช้ void login(input) จึงไม่ใช้ค่า boolean
+    Z-->>A: Store update ทำให้ UI Re-render
+    Note over A: มี User แสดง Profile; ไม่มี User แสดง Form
+    Note over F,M: จำลองใน Frontend โดยไม่มี HTTP Request หรือ Server Session
 ```
 
 จาก Workshop 05 เราเคยสร้าง `fetchEmployees(): Promise<void>` เพราะ Action เก็บผลลัพธ์ลง Store โดยตรง แต่ `mockLogin(): Promise<AuthUser>` ต้องคืน User ให้ Auth Store นำไปใช้งาน
@@ -288,21 +303,24 @@ export const useAuthStore = create<AuthStore>()(authStore);
 
 ### ลำดับการเปลี่ยน State
 
-```text
-Initial                    Login Pending              Login Success
-┌────────────────┐         ┌────────────────┐         ┌────────────────┐
-│ user: null     │         │ user: null     │         │ user: AuthUser │
-│ loading: false │   ──▶   │ loading: true  │   ──▶   │ loading: false │
-│ error: null    │         │ error: null    │         │ error: null    │
-└────────────────┘         └────────────────┘         └────────────────┘
-
-                                   │
-                                   └──────────────▶ Login Failed
-                                                   ┌────────────────┐
-                                                   │ user: null     │
-                                                   │ loading: false │
-                                                   │ error: "..."   │
-                                                   └────────────────┘
+```mermaid
+flowchart TD
+    I["Initial: user = null / loading = false / error = null"] -->|"login(input)"| P["Pending: loading = true / error = null"]
+    P --> R{"mockLogin() สำเร็จหรือไม่?"}
+    R -->|สำเร็จ| S["Success: user = AuthUser / error = null"]
+    R -->|Throw Error| E["Failed: user = null / เก็บ Error"]
+    S --> FS["finally: loading = false และ login() คืน true"]
+    E --> FE["finally: loading = false และ login() คืน false"]
+    FS --> PROFILE["App แสดง AuthProfile"]
+    FE --> FORM["App แสดง LoginForm พร้อม Error"]
+    FORM -->|"ลอง Login ใหม่"| P
+    PROFILE -->|"logout() แบบ Synchronous"| L["user = null / loading = false / error = null"]
+    L --> LOGIN["App แสดง LoginForm"]
+    LOGIN -->|"login(input)"| P
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class S,FS,PROFILE success
+    class E,FE,FORM failure
 ```
 
 - `try` เรียก Service และรับ `AuthUser`
@@ -422,6 +440,15 @@ export default function App() {
 ```
 
 เมื่อ `user` มีข้อมูลจะแสดง `AuthProfile` หากเป็น `null` จะแสดง `LoginForm`
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Authentication Store](../../../assets-repo/images/workshop07-01-authentication-store-hero.png)
+- [Flowchart: Local State และ Shared Authentication State](../../../assets-repo/diagrams/workshop07-01-store-architecture.mmd)
+- [Sequence Diagram: Mock Login](../../../assets-repo/diagrams/workshop07-01-mock-login-sequence.mmd)
+- [Flowchart: Login, Error และ Logout State](../../../assets-repo/diagrams/workshop07-01-auth-state-flow.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 > [!WARNING]
 > Conditional Rendering นี้ใช้ควบคุม UI เท่านั้น ไม่ใช่ Protected Route หรือ Authorization จริง Backend ต้องตรวจสอบ Session และสิทธิ์ของทุก API Request
@@ -553,7 +580,7 @@ Backend จะตรวจสอบ Password และจัดการ Session
 
 <div align="center">
 
-  **ถัดไป:** Workshop 07.2 — Backend API & HttpOnly Cookie
+  **ถัดไป:** [Workshop 07.2.1 — Express TypeScript & Login API](../workshop07-02a-express/README.md)
 
   [← Workshop 06](../workshop06-persist/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

@@ -1,0 +1,18 @@
+flowchart TD
+    I["Initial: employees = [] / loading = false / error = null"] --> A["fetchEmployees()"]
+    A --> L["Loading: loading = true / error = null / คง employees เดิม"]
+    L --> R{"ผลของ Request และการแปลงข้อมูล"}
+    R -->|สำเร็จ| S["set employees เป็น Array ใหม่จาก Mapping"]
+    R -->|Network / HTTP / JSON หรือ Mapping Error| E["catch: เก็บ error และคง employees เดิม"]
+    S --> FS["finally: loading = false"]
+    E --> FE["finally: loading = false"]
+    FS --> SU["UI แสดงรายชื่อใหม่"]
+    FE --> ER["UI แสดง Error พร้อมรายชื่อเดิมถ้ามี"]
+    SU -->|"กด Reload"| A
+    ER -->|"กด Reload เพื่อลองใหม่"| A
+    classDef pending fill:#fffbeb,stroke:#d97706,color:#78350f
+    classDef success fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef failure fill:#fff1f2,stroke:#e11d48,color:#881337
+    class L pending
+    class S,FS,SU success
+    class E,FE,ER failure

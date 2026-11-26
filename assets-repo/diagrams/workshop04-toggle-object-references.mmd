@@ -1,0 +1,11 @@
+flowchart LR
+    OLD["Array เดิมก่อน Toggle Junior"] -->|"index 0"| T["Object Tony เดิม: active = true"]
+    OLD -->|"index 1"| J["Object Junior เดิม: active = false"]
+    NEW["Array ใหม่จาก map()"] -->|"ID ไม่ตรง: คืน Object เดิม"| T
+    NEW -->|"ID ตรง: Spread เป็น Object ใหม่"| JNEW["Object Junior ใหม่: active = true"]
+    classDef old fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef fresh fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef changed fill:#fffbeb,stroke:#d97706,color:#78350f
+    class OLD,J old
+    class NEW fresh
+    class JNEW changed

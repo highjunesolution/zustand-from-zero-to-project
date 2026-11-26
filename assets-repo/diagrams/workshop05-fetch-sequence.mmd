@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant P as EmployeePage
+    participant Z as Zustand Store
+    participant API as REST API
+    participant L as EmployeeList
+
+    P->>Z: useEffect เรียก fetchEmployees()
+    Z->>Z: loading = true และ error = null
+    Z-->>P: แสดง Loading
+    Z->>API: GET /users ผ่าน fetch()
+    API-->>Z: HTTP Response
+    alt response.ok เป็น true และ JSON / Mapping สำเร็จ
+        Z->>Z: await response.json() เป็น ApiUser[]
+        Z->>Z: map id เป็น string และกำหนด active = true
+        Z->>Z: set employees เป็น Employee[]
+        Z-->>L: Selector ได้ Array ใหม่และ Re-render
+    else response.ok เป็น false
+        Z->>Z: Throw HTTP Error แล้ว catch เก็บ error
+        Z-->>P: แสดง Error และคง employees เดิม
+    end
+    Z->>Z: finally: loading = false
+    Z-->>P: ปิด Loading และเปิดปุ่ม Reload ใน Challenge
+    Note over P,Z: fetchEmployees() คืน Promise void และจัดการ Error ภายใน Action
+    Note over Z,API: Network Error หรือ JSON / Mapping Error เข้า catch และ finally เช่นกัน

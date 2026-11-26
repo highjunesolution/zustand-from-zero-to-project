@@ -11,6 +11,11 @@
 
   [← Workshop 05](../workshop05-async_action_api/README.md) · [หน้าหลัก](../../../README.md) · [Zustand Docs](https://zustand.docs.pmnd.rs/)
 
+  <br />
+  <br />
+
+  <img src="../../../assets-repo/images/workshop06-persist-hero.png" alt="Zustand Persist บันทึกคำค้นหาใน Browser localStorage แล้วกู้คืนหลัง Refresh" width="900" />
+
 </div>
 
 ---
@@ -59,14 +64,23 @@ error: null,
 
 เมื่อ Refresh หน้าเว็บ JavaScript Runtime เริ่มต้นใหม่และข้อมูลใน Memory หายไป แต่ `persist` middleware สามารถบันทึก State ลง Storage และนำกลับมาใส่ Store เมื่อเปิดหน้าเว็บใหม่ได้
 
-```text
-┌─────────────────────┐       บันทึก       ┌─────────────────────┐
-│    Zustand Store    │ ────────────────▶  │ Browser localStorage│
-│    State ปัจจุบัน   │                    │ Persisted State     │
-└──────────┬──────────┘                    └──────────┬──────────┘
-           ▲                                          │
-           └──────────── กู้คืนข้อมูล ────────────────┘
-                         Rehydration
+```mermaid
+flowchart TD
+    A["ผู้ใช้เปลี่ยน State ผ่าน Action"] --> B["Zustand Store อัปเดต State ใน Memory"]
+    B --> C["persist เลือกข้อมูลตาม Options และแปลงเป็น JSON"]
+    C --> D["เขียนลง Browser localStorage ตาม Key ใน name"]
+    D --> E["Refresh หน้าเว็บ: Memory เดิมหาย แต่ Storage ยังอยู่"]
+    E --> F["สร้าง Store ใหม่จากค่าเริ่มต้น"]
+    F --> G["persist อ่าน Key เดิมจาก localStorage"]
+    G --> H{"มีข้อมูลเดิมที่ใช้งานได้?"}
+    H -->|มี| I["Rehydration: รวม Persisted State เข้ากับ Store"]
+    H -->|ไม่มี| J["ใช้ State เริ่มต้น"]
+    I --> K["React อ่าน State ผ่าน Selector"]
+    J --> K
+    classDef memory fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef storage fill:#fffbeb,stroke:#d97706,color:#78350f
+    class B,F,I,J,K memory
+    class D,G storage
 ```
 
 การนำข้อมูลจาก Storage กลับมาใส่ Store เรียกว่า **Rehydration** ซึ่ง Zustand Persist จัดการให้อัตโนมัติในกรณีทั่วไป
@@ -208,6 +222,24 @@ searchTerm: "",
 ```
 
 แม้ Store จะมีหลาย Properties แต่ Persisted State จะมีเฉพาะ `searchTerm`
+
+```mermaid
+flowchart LR
+    S["Employee Store"] --> E["employees: ข้อมูลจาก API"]
+    S --> L["loading: สถานะ Request"]
+    S --> R["error: ข้อผิดพลาดชั่วคราว"]
+    S --> Q["searchTerm: คำค้นหาของผู้ใช้"]
+    Q --> P["partialize คืนเฉพาะ searchTerm"]
+    P --> LS["localStorage: employee-preferences"]
+    E --> M["อยู่ใน Memory และเริ่มใหม่หลัง Refresh"]
+    L --> M
+    R --> M
+    LS --> H["Rehydrate searchTerm หลัง Refresh"]
+    classDef persisted fill:#fffbeb,stroke:#d97706,color:#78350f
+    classDef transient fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    class Q,P,LS,H persisted
+    class E,L,R,M transient
+```
 
 ```json
 {
@@ -355,20 +387,54 @@ filteredEmployees.map((employee) => /* ... */)
 
 ### State ก่อนและหลัง Refresh
 
-```text
-ก่อน Refresh                       หลัง Refresh
-┌──────────────────────┐          ┌──────────────────────┐
-│ employees: [...]     │          │ employees: []        │
-│ loading: false       │  ─────▶  │ loading: false       │
-│ error: null          │          │ error: null          │
-│ searchTerm: "tony"   │          │ searchTerm: "tony"   │
-└──────────────────────┘          └──────────────────────┘
-                                             │
-                                             ▼
-                                   fetchEmployees() โหลดใหม่
+แผนภาพนี้แสดงกรณีใช้ `localStorage` ตามตัวอย่างในบท โดยคำค้นหาถูกกู้คืนจาก Storage ก่อน Component เรียกโหลดรายชื่อพนักงานใหม่:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as React UI
+    participant Z as Zustand + persist
+    participant LS as Browser localStorage
+    participant API as Employee API
+
+    User->>UI: พิมพ์คำค้นหา tony
+    UI->>Z: setSearchTerm("tony")
+    Z->>Z: อัปเดต searchTerm ใน Memory
+    Z->>LS: บันทึกเฉพาะ searchTerm ตาม partialize
+    Z-->>UI: กรองรายการด้วยคำค้นหา
+
+    User->>UI: Refresh หน้าเว็บ
+    Note over UI,Z: Store เดิมใน Memory ถูกสร้างใหม่
+    Z->>Z: ค่าเริ่มต้น: employees ว่าง, loading false, error null
+    Z->>LS: อ่าน employee-preferences
+    alt มี searchTerm ที่บันทึกไว้
+        LS-->>Z: searchTerm = tony
+        Z->>Z: Rehydrate เฉพาะ searchTerm
+    else ไม่มี Key เดิม
+        LS-->>Z: ไม่มีข้อมูล
+        Z->>Z: ใช้ searchTerm เริ่มต้นเป็นข้อความว่าง
+    end
+    Z-->>UI: แสดง Search Input จาก State
+    UI->>Z: Effect เรียก fetchEmployees()
+    Z->>Z: loading = true
+    Z->>API: โหลดรายชื่อพนักงานใหม่
+    API-->>Z: ส่งรายชื่อพนักงานเมื่อ Request สำเร็จ
+    Z->>Z: อัปเดต employees และปิด Loading
+    Z-->>UI: กรองรายชื่อด้วย searchTerm ปัจจุบัน
+    Note over Z,LS: localStorage ใช้แบบ Synchronous ในตัวอย่างนี้
+    Note over LS,API: Persist เก็บ Preference ใน Browser ไม่ได้บันทึก Employees ลง Backend
 ```
 
 เฉพาะ `searchTerm` ถูกกู้คืนจาก Storage ส่วน `employees` จะเริ่มจาก Array ว่างและโหลดใหม่จาก API
+
+ภาพเปิดบทและไฟล์ต้นฉบับ Diagram เก็บอยู่ใน `assets-repo`:
+
+- [ภาพ Persist Middleware](../../../assets-repo/images/workshop06-persist-hero.png)
+- [Flowchart: Persist และ Rehydration](../../../assets-repo/diagrams/workshop06-persist-overview.mmd)
+- [Flowchart: เลือก State ด้วย partialize](../../../assets-repo/diagrams/workshop06-partialize-flow.mmd)
+- [Sequence Diagram: บันทึกคำค้นหาและ Refresh](../../../assets-repo/diagrams/workshop06-rehydration-sequence.mmd)
+
+Mermaid จะแสดงเป็นแผนภาพบน GitHub และ Markdown Viewer ที่รองรับ ส่วนไฟล์ `.mmd` สามารถนำไปแก้ไขหรือ Export เป็นภาพต่อได้
 
 ### ล้างข้อมูลระหว่างทดสอบ
 
@@ -496,7 +562,7 @@ Persisted State อาจถูกสร้างจากแอปเวอร�
 
 <div align="center">
 
-  **ถัดไป:** Workshop 07 — Authentication Store
+  **ถัดไป:** [Workshop 07.1 — Authentication Store](../workshop07-01-authentication_store/README.md)
 
   [← Workshop 05](../workshop05-async_action_api/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 

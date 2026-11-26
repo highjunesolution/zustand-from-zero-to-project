@@ -1,0 +1,15 @@
+flowchart TD
+    U["ผู้ใช้กรอกชื่อใน EmployeeForm"] --> L["useState เก็บ name ภายใน Form"]
+    L --> C["กด Add Employee และเรียก handleAdd()"]
+    C --> T["trim ชื่อและตรวจข้อความว่าง"]
+    T --> Q{"มีชื่อหลัง trim หรือไม่?"}
+    Q -->|ไม่มี| STOP["Return: ไม่เพิ่ม Employee"]
+    Q -->|มี| E["สร้าง Employee: UUID, trimmedName และ active = true"]
+    E --> A["เรียก addEmployee(employee)"]
+    A --> S["set สร้าง Array ใหม่ด้วย Spread และเพิ่ม Employee"]
+    S --> R["EmployeeList เลือก employees ผ่าน Selector แล้ว Re-render"]
+    A --> CLEAR["หลัง Action ทำงานเสร็จ: setName เป็นข้อความว่าง"]
+    classDef local fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef shared fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class L,CLEAR local
+    class A,S,R shared

@@ -1,0 +1,33 @@
+sequenceDiagram
+    actor User
+    participant UI as React UI
+    participant Z as Zustand + persist
+    participant LS as Browser localStorage
+    participant API as Employee API
+
+    User->>UI: พิมพ์คำค้นหา tony
+    UI->>Z: setSearchTerm("tony")
+    Z->>Z: อัปเดต searchTerm ใน Memory
+    Z->>LS: บันทึกเฉพาะ searchTerm ตาม partialize
+    Z-->>UI: กรองรายการด้วยคำค้นหา
+
+    User->>UI: Refresh หน้าเว็บ
+    Note over UI,Z: Store เดิมใน Memory ถูกสร้างใหม่
+    Z->>Z: ค่าเริ่มต้น: employees ว่าง, loading false, error null
+    Z->>LS: อ่าน employee-preferences
+    alt มี searchTerm ที่บันทึกไว้
+        LS-->>Z: searchTerm = tony
+        Z->>Z: Rehydrate เฉพาะ searchTerm
+    else ไม่มี Key เดิม
+        LS-->>Z: ไม่มีข้อมูล
+        Z->>Z: ใช้ searchTerm เริ่มต้นเป็นข้อความว่าง
+    end
+    Z-->>UI: แสดง Search Input จาก State
+    UI->>Z: Effect เรียก fetchEmployees()
+    Z->>Z: loading = true
+    Z->>API: โหลดรายชื่อพนักงานใหม่
+    API-->>Z: ส่งรายชื่อพนักงานเมื่อ Request สำเร็จ
+    Z->>Z: อัปเดต employees และปิด Loading
+    Z-->>UI: กรองรายชื่อด้วย searchTerm ปัจจุบัน
+    Note over Z,LS: localStorage ใช้แบบ Synchronous ในตัวอย่างนี้
+    Note over LS,API: Persist เก็บ Preference ใน Browser ไม่ได้บันทึก Employees ลง Backend

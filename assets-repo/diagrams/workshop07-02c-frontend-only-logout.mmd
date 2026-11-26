@@ -1,0 +1,11 @@
+flowchart TD
+    A["Login สำเร็จ: Zustand มี User และ Backend มี Session"] --> B["ล้างเฉพาะ Zustand: user = null"]
+    B --> C["UI แสดง LoginForm แต่ Backend Session ยังอยู่"]
+    C --> D["Refresh หน้าเว็บ"]
+    D --> E["checkAuth เรียก GET /api/auth/me พร้อม Cookie เดิม"]
+    E --> F["Backend พบ Session และตอบ 200 พร้อม User"]
+    F --> G["Zustand Restore User และ UI แสดง AuthProfile อีกครั้ง"]
+    classDef warning fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+    classDef restored fill:#ecfeff,stroke:#0891b2,color:#164e63
+    class B,C warning
+    class F,G restored
