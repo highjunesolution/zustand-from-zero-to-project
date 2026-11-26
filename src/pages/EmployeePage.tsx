@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useEmployeeStore } from "../stores/useEmployeeStore";
-import EmployeeForm from "./EmployeeForm";
-import EmployeeList from "./EmployeeList";
+import EmployeeForm from "../components/EmployeeForm";
+import EmployeeList from "../components/EmployeeList";
 
 const EmployeePage = () => {
   const fetchEmployees = useEmployeeStore((state) => state.fetchEmployees);

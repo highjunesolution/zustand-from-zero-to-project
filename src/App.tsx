@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import AuthProfile from "./components/AuthProfile";
-import EmployeePage from "./components/EmployeePage";
-import LoginForm from "./components/LoginForm";
 import { useAuthStore } from "./stores/useAuthStore";
+import { Navigate, Route, Routes } from "react-router";
+import LoginPage from "./pages/LoginPage";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import DashboardPage from "./pages/DashboardPage";
+import EmployeePage from "./pages/EmployeePage";
 
 const App = () => {
-  const user = useAuthStore((state) => state.user);
   const authStatus = useAuthStore((state) => state.authStatus);
   const error = useAuthStore((state) => state.error);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -15,21 +17,33 @@ const App = () => {
   }, [checkAuth]);
 
   if (authStatus === "checking") {
-    return <p>Checknig authentication...</p>;
+    return <p>Checking authentication...</p>;
   }
 
   if (authStatus === "error") {
-    return <>
-      <p>Session verification failed: {error}</p>
-      <button onClick={checkAuth}>Retry Authentication</button>
-    </>;
+    return (
+      <>
+        <p>Session verification failed: {error}</p>
+        <button onClick={()=>void checkAuth}>Retry Authentication</button>
+      </>
+    );
   }
 
-  if (authStatus === "authenticated" && user) {
-    return <AuthProfile />;
-  }
 
-  return <LoginForm />;
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<LoginPage/>} />
+      
+      <Route element={<ProtectedRoute/>} >
+        <Route path="/dashboard" element={<DashboardPage/>}/>
+        <Route path="/profile" element={<AuthProfile/>} />
+        <Route path="/employees" element={<EmployeePage/>}/>
+      </Route>
+
+      <Route path="*" element={<h2>404 Not Found</h2>} />
+    </Routes>
+  );
 };
 
 export default App;
