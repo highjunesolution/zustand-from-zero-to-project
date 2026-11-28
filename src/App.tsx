@@ -27,7 +27,7 @@ const App = () => {
     return (
       <>
         <p>Session verification failed: {error}</p>
-        <button onClick={() => void checkAuth}>Retry Authentication</button>
+        <button onClick={() => void checkAuth()}>Retry Authentication</button>
       </>
     );
   }
