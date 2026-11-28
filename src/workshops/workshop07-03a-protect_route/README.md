@@ -620,7 +620,7 @@ ADMIN → ทุกหน้าของ USER + Admin Management
 
 <div align="center">
 
-  **ถัดไป:** Workshop 07.3.2 — Role-based Routes
+  **ถัดไป:** [Workshop 07.3.2 — Role-based Routes](../workshop07-03b-role_based_route/README.md)
 
   [← Workshop 07.2.3](../workshop07-02c-logout_session_destruction/README.md) · [กลับสู่หน้าหลัก](../../../README.md)
 
