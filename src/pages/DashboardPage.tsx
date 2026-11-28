@@ -15,7 +15,7 @@ const DashboardPage = () => {
             <Link to={"/profile"}>My Profile</Link>
             <Link to={"/employees"}>Employee list</Link>
 
-            {user?.role == "ADMIN" && (
+            {user?.role === "ADMIN" && (
               <Link to={"/admin"}>Admin management</Link>
             )}
         </nav>
