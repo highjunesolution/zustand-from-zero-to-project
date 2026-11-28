@@ -14,6 +14,10 @@ const DashboardPage = () => {
         <nav style={{display: "flex", gap: 10}}>
             <Link to={"/profile"}>My Profile</Link>
             <Link to={"/employees"}>Employee list</Link>
+
+            {user?.role == "ADMIN" && (
+              <Link to={"/admin"}>Admin management</Link>
+            )}
         </nav>
     </main>
   )

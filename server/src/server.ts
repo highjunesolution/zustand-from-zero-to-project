@@ -38,6 +38,18 @@ const demoUser: AuthUser = {
   role: "USER",
 };
 
+const demoAdmin: AuthUser = {
+  id: "admin001",
+  displayName: "Admin User",
+  email: "admin@example.com",
+  role: "ADMIN",
+};
+
+const demoAccounts = [
+  { user: demoUser, password: "workshop123" },
+  { user: demoAdmin, password: "workshop123" },
+];
+
 app.post("/api/auth/login", (req, res, next) => {
   const email: unknown = req.body?.email;
   const password: unknown = req.body?.password;
@@ -50,7 +62,11 @@ app.post("/api/auth/login", (req, res, next) => {
   }
 
   //  2. ตรวจสอบบัญชี Demo
-  if (email !== "demo@example.com" || password !== "workshop123") {
+  const account = demoAccounts.find((item) => {
+    return item.user.email === email && item.password == password;
+  });
+
+  if (!account) {
     return res.status(401).json({
       message: "Invalid email or password",
     });
@@ -61,7 +77,7 @@ app.post("/api/auth/login", (req, res, next) => {
     if (err) return next(err);
 
     // 4. เก็บข้อมูล User ฝั่ง Backend
-    req.session.user = demoUser;
+    req.session.user = account.user;
 
     // 5. บันทึก Session
     req.session.save((saveErr) => {
@@ -69,31 +85,31 @@ app.post("/api/auth/login", (req, res, next) => {
 
       // 6. ส่งเฉพาะ User กลับ Frontend
       return res.status(200).json({
-        user: demoUser,
+        user: account.user,
       });
     });
   });
 });
 
-app.get("/api/auth/me", (req,res, next)=>{
+app.get("/api/auth/me", (req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
-  const { user } = req.session
+  const { user } = req.session;
 
-  if(!user) {
+  if (!user) {
     return res.status(401).json({
-      message: "Unauthenticated"
-    })
+      message: "Unauthenticated",
+    });
   }
 
   return res.status(200).json({
-    user
-  })
+    user,
+  });
 });
 
-app.post("/api/auth/logout", (req, res, next)=>{
+app.post("/api/auth/logout", (req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
-  req.session.destroy((err)=>{
-    if(err) {
+  req.session.destroy((err) => {
+    if (err) {
       return next(err);
     }
 
@@ -102,10 +118,10 @@ app.post("/api/auth/logout", (req, res, next)=>{
       httpOnly: true,
       secure: false,
       sameSite: "lax",
-    })
+    });
 
     return res.status(204).end();
-  })
+  });
 });
 
 app.listen(PORT, "127.0.0.1", () => {
