@@ -130,7 +130,6 @@ Zustand เหมาะกับ State ที่หลาย Components ต้�
 
 Diagram นี้แสดงการ Re-render จาก Store Update โดย Component ยังอาจ Re-render จากสาเหตุอื่น เช่น Local State หรือ Parent Component ได้
 
-ไฟล์ประกอบหน้านี้: [ภาพปกพร้อมชื่อโปรเจกต์](./assets-repo/images/zustand-workshop-gradient-cover-v2.png) · [ต้นฉบับ Mermaid](./assets-repo/diagrams/zustand-workshop-state-flow.mmd) · [Prompt สร้างภาพ](./assets-repo/prompts/zustand-workshop-gradient-cover-v2.txt)
 
 ---
 
