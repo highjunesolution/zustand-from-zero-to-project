@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User
+    participant UI as React / Zustand
+    participant API as Express API
+    participant Store as Session Store
+
+    User->>UI: Login ด้วยบัญชี USER หรือ ADMIN
+    UI->>API: POST /api/auth/login
+    API->>API: ค้นหา account ที่ Email และ Password ตรงกัน
+    Note over API: หากไม่พบ account ตอบ 401 และไม่สร้าง Authenticated Session
+    API->>Store: regenerate แล้วบันทึก account.user
+    Store-->>API: บันทึกสำเร็จ
+    API-->>UI: 200 พร้อม JSON account.user และ Set-Cookie
+    UI->>UI: Zustand เก็บ User และ Role จาก Response
+
+    User->>UI: Refresh
+    UI->>API: GET /api/auth/me พร้อม Cookie โดย Browser
+    API->>Store: โหลด Session
+    Store-->>API: Session.user ของบัญชีที่ Login
+    API-->>UI: 200 พร้อม User และ Role เดิม
+    UI->>UI: ProtectedRoute ตรวจ Login ก่อน AdminRoute ตรวจ Role
+    Note over UI,Store: แผนภาพนี้แสดงกรณี Login สำเร็จและ Session ยังใช้งานได้

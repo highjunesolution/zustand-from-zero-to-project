@@ -1,0 +1,16 @@
+flowchart TD
+    A["เปิด /admin"] --> B["App ตรวจ Session ด้วย checkAuth()"]
+    B --> C{"authStatus"}
+    C -->|checking| W["แสดง Checking authentication และรอผล"]
+    C -->|error| E["แสดง Error และปุ่ม Retry"]
+    C -->|authenticated หรือ unauthenticated| P["ProtectedRoute ตรวจ authStatus และ user"]
+    P --> Q{"Login แล้วและมี User?"}
+    Q -->|ไม่ใช่| LOGIN["Navigate /login"]
+    Q -->|ใช่| R["AdminRoute ตรวจ user.role"]
+    R --> S{"role เป็น ADMIN?"}
+    S -->|ใช่| ADMIN["Outlet แสดง AdminPage"]
+    S -->|ไม่ใช่| FORBIDDEN["Navigate /forbidden"]
+    classDef allowed fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef denied fill:#fff1f2,stroke:#e11d48,color:#881337
+    class ADMIN allowed
+    class LOGIN,FORBIDDEN,E denied

@@ -1,0 +1,15 @@
+flowchart TD
+    ROOT["Routes หลัง App ตรวจ Session เสร็จ"] --> HOME["/ เปลี่ยนไป /dashboard"]
+    ROOT --> LOGIN["/login: LoginPage"]
+    ROOT --> P["ProtectedRoute: ต้อง Login"]
+    ROOT --> UNKNOWN["*: 404 Not Found"]
+    P --> DASH["/dashboard: DashboardPage"]
+    P --> PROFILE["/profile: AuthProfile"]
+    P --> EMP["/employees: EmployeePage"]
+    P --> FORBIDDEN["/forbidden: ForbiddenPage"]
+    P --> A["AdminRoute: ต้องมี role ADMIN"]
+    A --> ADMIN["/admin: AdminPage"]
+    classDef auth fill:#ecfeff,stroke:#0891b2,color:#164e63
+    classDef role fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    class P auth
+    class A,ADMIN role
