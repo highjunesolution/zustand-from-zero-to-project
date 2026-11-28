@@ -11,7 +11,7 @@ const AdminPage = () => {
         <p>Welcome, {user?.displayName}</p>
         <p>Role: {user?.role}</p>
 
-        <Link to={"/dashboard"}></Link>
+        <Link to={"/dashboard"}>Back to Dashboard</Link>
     </main>
   )
 }
