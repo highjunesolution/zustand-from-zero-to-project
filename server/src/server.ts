@@ -63,7 +63,7 @@ app.post("/api/auth/login", (req, res, next) => {
 
   //  2. ตรวจสอบบัญชี Demo
   const account = demoAccounts.find((item) => {
-    return item.user.email === email && item.password == password;
+    return item.user.email === email && item.password === password;
   });
 
   if (!account) {
